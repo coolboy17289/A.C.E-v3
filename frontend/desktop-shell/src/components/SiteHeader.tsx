@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { useAceStore, type ActiveView } from '@ace/shared';
+import { useAceStore } from '@ace/shared';
 
 interface ViewMeta {
   title: string;
   subtitle: string;
 }
 
-const VIEW_META: Record<ActiveView, ViewMeta> = {
+/**
+ * Subset of `ActiveView` for which we know how to render a styled
+ * header. The Sidebar only surfaces shipped app ids in its nav, so in
+ * practice `activeView` is only ever one of these three; typing
+ * `VIEW_META` as a `Record<ShippedView, ViewMeta>` keeps TypeScript
+ * honest if a parked app id ever leaks into the store.
+ */
+type ShippedView = 'dashboard' | 'ai' | 'settings';
+
+const SHIPPED_VIEWS = new Set<ShippedView>(['dashboard', 'ai', 'settings']);
+
+const VIEW_META: Record<ShippedView, ViewMeta> = {
   dashboard: {
     title: 'Dashboard',
     subtitle: 'Today\u2019s overview and quick actions.',
@@ -23,23 +34,28 @@ const VIEW_META: Record<ActiveView, ViewMeta> = {
 
 /**
  * Slim header that sits above the active view. Replaces the OS-style
- * TopBar \u2014 no window controls, no app launcher button (those belong to
- * the Sidebar now). Shows the active view's title + a clock pill so the
- * site still feels like a real-time product even though we removed the
- * kiosk-mode timers.
+ * TopBar -- the sidebar carries nav, window chrome is gone, the bell
+ * lives in the sidebar footer. The header just sets context: which view
+ * am I in, and what time is it.
  */
 export const SiteHeader: React.FC = () => {
   const active = useAceStore((s) => s.activeView);
   const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
-    // Refresh every 30s \u2014 the seconds never matter for the header label
-    // so a 30-second cadence avoids waking the component on every tick.
+    // 30s cadence is plenty; the seconds never matter for the label.
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
   }, []);
 
-  const meta = VIEW_META[active] ?? VIEW_META.dashboard;
+  // Shipped views cover every activeView a user can reach via the
+  // sidebar. The narrow + lookup pattern keeps the union of concerns
+  // tight without making TypeScript's Record exhaustiveness fight us.
+  const keyed: ShippedView = SHIPPED_VIEWS.has(active as ShippedView)
+    ? (active as ShippedView)
+    : 'dashboard';
+  const meta = VIEW_META[keyed];
+
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const date = now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -64,7 +80,7 @@ export const SiteHeader: React.FC = () => {
           title="Local time"
         >
           <span>{time}</span>
-          <span className="text-ace-muted/70">\u00b7</span>
+          <span className="text-ace-muted/70">{' '}{'\u00b7'}{' '}</span>
           <span className="text-ace-muted">{date}</span>
         </div>
       </div>

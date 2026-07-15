@@ -153,3 +153,5 @@ Update:
 Update: version 1.2.1 --beta is now being pushed timespame jul 15 1829hr                                                              
 Update v1.2.1--beta is a broken vertion not to be used 
 update v1.2.2 -- beta is a fix hopefull that is now being pushed 
+  Note: ai tutor is broken 
+  
