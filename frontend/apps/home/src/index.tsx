@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { TouchButton, TouchCard, Row, palette } from '@ace/design-system';
+import React, { useEffect, useState } from 'react';
+import { TouchButton, TouchCard, palette, ThemeProvider, useResolvedTheme, type ThemeMode } from '@ace/design-system';
 import { api, getApp, APP_REGISTRY, type UserProfile, type Task, type CalendarEvent } from '@ace/shared';
 
 /**
@@ -14,13 +14,31 @@ import { api, getApp, APP_REGISTRY, type UserProfile, type Task, type CalendarEv
  * Data sources (read-only on launch, refresh button rebinds):
  *   GET /api/users/me, /api/tasks, /api/calendar, /api/focus.
  */
+
+// Local flex helper — TouchRow is a list-row widget, not a container.
+function Flex({ gap = 0, wrap = false, children, style }: {
+  gap?: number; wrap?: boolean; children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
+  return <div style={{ display: "flex", gap, flexWrap: wrap ? "wrap" : "nowrap", ...style }}>{children}</div>;
+}
+
 export interface HomeAppProps {
   /** Optional callback when an app tile is tapped — desktop-shell
    *  opens the corresponding window. If absent, taps just log. */
   onOpenApp?: (appId: string) => void;
+  /** Optional theme override. */
+  theme?: ThemeMode;
 }
 
-export function HomeApp({ onOpenApp }: HomeAppProps) {
+export function HomeApp(props: HomeAppProps) {
+  if (props.theme) {
+    return <ThemeProvider initialTheme={props.theme}><HomeInner {...props} /></ThemeProvider>;
+  }
+  return <HomeInner {...props} />;
+}
+
+function HomeInner({ onOpenApp }: HomeAppProps) {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -71,7 +89,7 @@ export function HomeApp({ onOpenApp }: HomeAppProps) {
       fontFamily: 'system-ui, sans-serif',
     }}>
       {/* Row 1 — greeting & clock */}
-      <Row gap={16} wrap>
+      <Flex gap={16} wrap>
         <TouchCard theme={theme} style={{ flex: 2, minWidth: 360 }}>
           <div style={{ fontSize: 32, fontWeight: 800 }}>{greeting}</div>
           <div style={{ fontSize: 24, color: p.textMuted, marginTop: 8 }}>
@@ -86,7 +104,7 @@ export function HomeApp({ onOpenApp }: HomeAppProps) {
             </div>
           )}
         </TouchCard>
-        <TouchCard theme={theme} accent={p.primary} style={{ flex: 1, minWidth: 220 }}>
+        <TouchCard theme={theme} variant="accent" style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 18, color: p.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
             Open tasks
           </div>
@@ -97,10 +115,10 @@ export function HomeApp({ onOpenApp }: HomeAppProps) {
             tap Tasks to plan
           </div>
         </TouchCard>
-      </Row>
+      </Flex>
 
       {/* Row 2 — quick actions */}
-      <Row gap={16} wrap style={{ marginTop: 16 }}>
+      <Flex gap={16} wrap style={{ marginTop: 16 }}>
         <TouchButton
           theme={theme}
           size="lg"
@@ -121,7 +139,7 @@ export function HomeApp({ onOpenApp }: HomeAppProps) {
         >
           Add a task
         </TouchButton>
-      </Row>
+      </Flex>
 
       {/* Row 3 — launch grid */}
       <div style={{
@@ -129,7 +147,7 @@ export function HomeApp({ onOpenApp }: HomeAppProps) {
       }}>
         Apps
       </div>
-      <Row gap={16} wrap>
+      <Flex gap={16} wrap>
         {APP_REGISTRY.map((app) => {
           const meta = getApp(app.id);
           return (
@@ -159,7 +177,7 @@ export function HomeApp({ onOpenApp }: HomeAppProps) {
             </TouchButton>
           );
         })}
-      </Row>
+      </Flex>
 
       {/* Row 4 — next class peek */}
       {nextEvent && (

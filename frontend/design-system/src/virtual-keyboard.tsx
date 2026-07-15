@@ -27,6 +27,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { spacing, radius } from './spacing.js';
 import { useTouchContext } from './touch-context.js';
 import { minTapGapMs } from './theme.js';
+import { useDebouncedTap } from './debounce.js';
 
 export interface VirtualKeyboardProps {
   theme?: ThemeMode;
@@ -166,7 +167,7 @@ interface KeyButtonProps {
 
 function KeyButton({ char_, scheme, onTap, theme, wide, accent }: KeyButtonProps) {
   const t = palette(theme);
-  const innerTap = useDebouncedTap((c: string) => onTap(c));
+  const innerTap = useDebouncedTap(() => onTap(char_));
 
   const style: CSSProperties = {
     minWidth: scheme === 'numeric' ? '88px' : wide ? '160px' : '64px',
@@ -196,7 +197,7 @@ function KeyButton({ char_, scheme, onTap, theme, wide, accent }: KeyButtonProps
       }}
       onPointerUp={(e) => {
         e.currentTarget.style.transform = 'scale(1)';
-        innerTap(char_);
+        innerTap(e);
       }}
       onPointerLeave={(e) => {
         e.currentTarget.style.transform = 'scale(1)';

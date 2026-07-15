@@ -3,50 +3,69 @@
  *
  * Imported as a side-effect from `@ace/design-system`'s index.ts so
  * every workspace that consumes the design system gets the rules below
- * with no explicit opt-in. The rules are deliberately scoped to
- * keyboard navigation and motion sensitivity so they don't fight any
- * per-component inline styling.
+ * with no explicit opt-in.
  *
- * Scope decisions:
- *   - :where(...) keeps selector specificity at 0 so a consumer's own
- *     `:focus { outline: none; }` would still override (we don't
- *     want theme overrides blocked). At the same time, the default
- *     ring colour (#3da8ff) has > 4.5:1 contrast against both the
- *     dark and light A.C.E palettes so the ring is visible until
- *     something overrides it.
- *   - For the prefers-reduced-motion block, we override to a duration
- *     of 0.001ms (not 0) rather than fully killing animations —
- *     CSS animation events still fire so listeners that want to react
- *     to an "animationend" keep working, but visually nothing
- *     moves.
- *   - We do NOT touch transform. The press-state handlers in
- *     TouchButton / TouchCard / TouchRow set inline transform style
- *     on pointer-down. With transition-duration: 0.001ms the press
- *     squish still applies on press but lands on the same frame as
- *     the pointerdown event — effectively a no-op visually while
- *     leaving the data-attribute cue (data-pressed) intact for any
- *     future styling that wants to react differently in the reduced
- *     motion case.
+ * Two concerns are addressed:
+ *
+ * 1. Keyboard navigation — a `:focus-visible` ring colour exposed via
+ *    the `--ace-focus-ring` CSS variable. The variable is set once
+ *    here to the dark palette's primary (`#3da8ff`, which sits > 4.5:1
+ *    above `#0b1020`) so it ships out of the box. Themes can override
+ *    the colour by re-declaring `--ace-focus-ring` on a higher-scoped
+ *    selector — there's no `:where()` wrap on the focus rule so theme
+ *    overrides don't have to bump specificity past zero.
+ *
+ * 2. Motion sensitivity — a `@media (prefers-reduced-motion: reduce)`
+ *    block that *narrows* its scope to interactive primitives only
+ *    (button, role=button divs, inputs, status/toolbar regions). The
+ *    bare `*` selector would otherwise nuke legitimate animations
+ *    a future maintainer might add (a loading spinner, a progress
+ *    bar, a pull-to-refresh indicator). `scroll-behavior` is the one
+ *    property kept on `html` because it cannot reasonably be scoped
+ *    to a single element type.
+ *
+ * What we deliberately do NOT do:
+ *
+ *  - Apply the press-scale transforms via CSS — the components still
+ *    set `transform: scale(0.9x)` via inline JS on pointerdown/up.
+ *    With `transition-duration: 0.001ms` the squish still snaps in
+ *    on the same frame, so the press cue is preserved for users who
+ *    can perceive scale changes; it's just not animated. The
+ *    explicit data-pressed attribute on TouchButton is also still
+ *    set, in case future styling wants to react independently.
+ *
+ *  - Override colour or contrast — themes get first call by setting
+ *    `--ace-focus-ring` themselves.
  */
 
-:where(
-    button,
-    div[role="button"],
-    input,
-    select,
-    textarea
-  ):focus-visible {
-  outline: 3px solid #3da8ff;
+:root {
+  --ace-focus-ring: #3da8ff;
+}
+
+button:focus-visible,
+div[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--ace-focus-ring);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  /* Scope the squashed-animation override to interactive primitives
+     only. Legitimate non-interactive motion (a spinner, a chart's
+     transition-to-load animation) is left alone. Note: disabled
+     controls are intentionally NOT excluded - a disabled button has
+     no animation to suppress anyway, and the design system's
+     `role="button"` divs never carry the `:disabled` attribute. */
+  :where(button, div[role="button"], input, select, textarea,
+         [role="status"], [role="toolbar"]) {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  html {
     scroll-behavior: auto !important;
   }
 }

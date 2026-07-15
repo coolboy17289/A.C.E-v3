@@ -18,10 +18,14 @@ const alias = {
   '@ace/shared/*':      path.resolve('../shared/src'),
   '@ace/design-system': path.resolve('../design-system/src/index.ts'),
   '@ace/design-system/*': path.resolve('../design-system/src'),
-  '@ace/app-home':      path.resolve('../apps/home/src/index.tsx'),
-  '@ace/app-tasks':     path.resolve('../apps/tasks/src/index.tsx'),
-  '@ace/app-focus':     path.resolve('../apps/focus/src/index.tsx'),
-  '@ace/app-settings':  path.resolve('../apps/settings/src/index.tsx'),
+  '@ace/app-home':       path.resolve('../apps/home/src/index.tsx'),
+  '@ace/app-tasks':      path.resolve('../apps/tasks/src/index.tsx'),
+  '@ace/app-focus':      path.resolve('../apps/focus/src/index.tsx'),
+  '@ace/app-subjects':   path.resolve('../apps/subjects/src/index.tsx'),
+  '@ace/app-planner':    path.resolve('../apps/planner/src/index.tsx'),
+  '@ace/app-notes':      path.resolve('../apps/notes/src/index.tsx'),
+  '@ace/app-statistics': path.resolve('../apps/statistics/src/index.tsx'),
+  '@ace/app-settings':   path.resolve('../apps/settings/src/index.tsx'),
 };
 
 export default defineConfig({
@@ -40,11 +44,15 @@ export default defineConfig({
       // their own chunks. Keeps the initial launcher tile bundle small.
       output: {
         manualChunks: (id) => {
-          if (id.includes('/apps/home/'))    return 'app-home';
-          if (id.includes('/apps/tasks/'))   return 'app-tasks';
-          if (id.includes('/apps/focus/'))   return 'app-focus';
-          if (id.includes('/apps/settings/'))return 'app-settings';
-          if (id.includes('/design-system/'))return 'ace-design-system';
+          if (id.includes('/apps/home/'))       return 'app-home';
+          if (id.includes('/apps/tasks/'))      return 'app-tasks';
+          if (id.includes('/apps/focus/'))      return 'app-focus';
+          if (id.includes('/apps/subjects/'))   return 'app-subjects';
+          if (id.includes('/apps/planner/'))    return 'app-planner';
+          if (id.includes('/apps/notes/'))      return 'app-notes';
+          if (id.includes('/apps/statistics/')) return 'app-statistics';
+          if (id.includes('/apps/settings/'))   return 'app-settings';
+          if (id.includes('/design-system/'))   return 'ace-design-system';
           return undefined;
         },
       },

@@ -70,6 +70,30 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    // Tile-tap handler. Upgrading the weak handle inside the callback
+    // would be unsafe (the window can be torn down between the tap
+    // and the upgrade); we therefore pump the property writes
+    // through `upgrade_in_event_loop` so they always run on the UI
+    // thread inside `ui.run()`. The accent lookup reads the live
+    // tile list straight off the upgraded `AppWindow` so the
+    // registry lives in a single place (the .slint file).
+    ui.on_app_tile_clicked({
+        let h = ui_handle.clone();
+        move |id: slint::SharedString| {
+            let id_for_lookup = id.clone();
+            let _ = h.upgrade_in_event_loop(move |w| {
+                let accent = w
+                    .get_apps()
+                    .iter()
+                    .find(|t| t.id == id_for_lookup)
+                    .map(|t| t.accent.clone())
+                    .unwrap_or_else(|| slint::SharedString::from("#3da8ff"));
+                w.set_selected_app_accent(accent);
+                w.set_selected_app_id(id);
+            });
+        }
+    });
+
     // Trigger an initial fetch so the window lands with live data.
     spawn_fetch(ui.as_weak(), backend_base);
 

@@ -12,10 +12,14 @@
       "@ace/shared/*": ["../shared/src/*"],
       "@ace/design-system": ["../design-system/src/index.ts"],
       "@ace/design-system/*": ["../design-system/src/*"],
-      "@ace/app-home": ["../apps/home/src/index.tsx"],
-      "@ace/app-tasks": ["../apps/tasks/src/index.tsx"],
-      "@ace/app-focus": ["../apps/focus/src/index.tsx"],
-      "@ace/app-settings": ["../apps/settings/src/index.tsx"]
+      "@ace/app-home":       ["../apps/home/src/index.tsx"],
+      "@ace/app-tasks":      ["../apps/tasks/src/index.tsx"],
+      "@ace/app-focus":      ["../apps/focus/src/index.tsx"],
+      "@ace/app-subjects":   ["../apps/subjects/src/index.tsx"],
+      "@ace/app-planner":    ["../apps/planner/src/index.tsx"],
+      "@ace/app-notes":      ["../apps/notes/src/index.tsx"],
+      "@ace/app-statistics": ["../apps/statistics/src/index.tsx"],
+      "@ace/app-settings":   ["../apps/settings/src/index.tsx"]
     }
   },
   "include": ["src/**/*", "index.html"]

@@ -60,9 +60,12 @@ describe('rowToTask', () => {
   it('coerces completed to a boolean via num()', () => {
     expect(rowToTask({ ...baseRow, completed: 1 }).completed).toBe(true);
     expect(rowToTask({ ...baseRow, completed: 0 }).completed).toBe(false);
-    // num('1') === 1, num('') === 0 — defense against weak driver typing.
+    // Defence in depth: better-sqlite3 currently returns INTEGER
+    // columns as JS numbers, but the cast pins the contract that a
+    // future driver that returns stringified ints (`"1"`, `"0"`)
+    // would still produce a clean boolean via `num()`'s
+    // Number-isFinite coercion.
     expect(rowToTask({ ...baseRow, completed: '1' as unknown as number }).completed).toBe(true);
-    expect(rowToTask({ ...baseRow, completed: 0 as unknown as number }).completed).toBe(false);
   });
 
   it('drops null/undefined optional fields entirely', () => {
@@ -187,9 +190,26 @@ describe('rowToNote', () => {
     expect(n.tags).toEqual([]);
   });
 
+  it('falls back to [] when tags JSON parses to a non-array', () => {
+    // safeJsonArray's contract: a string that JSON-parses to an object
+    // (not an array) must coerce to []. This is the second tier of
+    // "tags is unavoidable garbage", and the row mapper must hide it.
+    const n = rowToNote({
+      id: 'note_3',
+      subject_id: 'sub_math',
+      title: 'T',
+      body: '...',
+      tags: '{"a":1}',
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+      revision_count: 0,
+    });
+    expect(n.tags).toEqual([]);
+  });
+
   it('applies safeJsonArray directly to [] input', () => {
     expect(rowToNote({
-      id: 'n3', subject_id: 's', title: 't', body: '',
+      id: 'n4', subject_id: 's', title: 't', body: '',
       tags: [],
       created_at: '2025-01-01T00:00:00Z',
       updated_at: '2025-01-01T00:00:00Z',

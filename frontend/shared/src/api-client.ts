@@ -56,14 +56,24 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   // 204 / empty body — return null cast to the expected shape.
   if (!text) return null as T;
+  let parsed: unknown;
   try {
-    return JSON.parse(text) as T;
+    parsed = JSON.parse(text);
   } catch {
     // Server returned non-JSON on a 2xx — treat as empty rather than
     // crashing the hydration path. The wallpaper/save flow can then
     // continue with local state until the backend is reachable.
     return null as T;
   }
+  // New backend uses an envelope: { ok: true, data: T, requestId }.
+  // Unwrap here so the call sites (api.tasks.list, api.calendar.list,
+  // ...) keep their existing `Promise<T[]>` signatures. If a route
+  // ever returns a non-envelope (e.g. /api/users/me), we pass it
+  // through untouched.
+  if (parsed && typeof parsed === 'object' && 'ok' in (parsed as any) && 'data' in (parsed as any)) {
+    return (parsed as any).data as T;
+  }
+  return parsed as T;
 }
 
 export const api = {
@@ -94,6 +104,17 @@ export const api = {
     request<NoteRecord>('POST', '/api/notes', n),
   updateNote: (id: string, patch: Partial<NoteRecord>) =>
     request<NoteRecord>('PATCH', `/api/notes/${id}`, patch),
+  deleteNote: (id: string) => request<{ ok: true }>('DELETE', `/api/notes/${id}`),
+  // Notes (nested aliases — full CRUD, matching the flat
+  // listNotes/createNote/updateNote/deleteNote methods above).
+  notes: {
+    list: () => request<NoteRecord[]>('GET', '/api/notes'),
+    create: (n: Omit<NoteRecord, 'id' | 'createdAt' | 'updatedAt' | 'revisionCount'>) =>
+      request<NoteRecord>('POST', '/api/notes', n),
+    update: (id: string, patch: Partial<NoteRecord>) =>
+      request<NoteRecord>('PATCH', `/api/notes/${id}`, patch),
+    delete: (id: string) => request<{ ok: true }>('DELETE', `/api/notes/${id}`),
+  },
   // Focus
   listSessions: () => request<FocusSession[]>('GET', '/api/focus'),
   createSession: (s: Omit<FocusSession, 'id'>) =>
@@ -107,6 +128,16 @@ export const api = {
   // Tasks (nested aliases)
   tasks: {
     list: () => request<Task[]>('GET', '/api/tasks'),
+  },
+  // Calendar (nested aliases — full CRUD, matching the flat
+  // listEvents/createEvent/updateEvent/deleteEvent methods above).
+  calendar: {
+    list: () => request<CalendarEvent[]>('GET', '/api/calendar'),
+    create: (e: Omit<CalendarEvent, 'id'>) =>
+      request<CalendarEvent>('POST', '/api/calendar', e),
+    update: (id: string, patch: Partial<CalendarEvent>) =>
+      request<CalendarEvent>('PATCH', `/api/calendar/${id}`, patch),
+    delete: (id: string) => request<{ ok: true }>('DELETE', `/api/calendar/${id}`),
   },
   // AI
   listMessages: () => request<ChatMessage[]>('GET', '/api/ai/messages'),

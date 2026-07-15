@@ -8,6 +8,36 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- `docs/MIGRATION.md` — phased plan for retiring the React/TypeScript
+  shell in favour of a native binary. Phase 0 (this PR) extends the
+  Rust + Slint MVP into a touch-launcher shell; later phases cover
+  design-system parity, per-app porting, and a gated archive of the
+  React stack. The TypeScript source under `frontend/desktop-shell/`,
+  `frontend/design-system/`, `frontend/shared/`, and `frontend/apps/*`
+  is **not removed** at any phase — it stays runnable and tested
+  throughout.
+
+- Touch-launcher in `frontend/rust-slint/`. The MVP three-label +
+  Refresh layout is replaced by a three-region shell mirroring the
+  React `Dashboard.tsx` structure:
+  - header strip (64 px) with the kiosk wordmark + user name from
+    `GET /api/users/me`
+  - accent strip (3 px) whose colour tracks the currently-selected
+    launcher tile
+  - body (fills) with the endpoint-status block + Refresh button
+    so live backend connectivity is visible on first paint
+  - launcher row (96 px) with one `LauncherTile` per entry in the
+    in-file `apps` property (Home / Tasks / Settings / Focus)
+
+  Tapping a tile fires the new `app-tile-clicked` callback, which
+  `main.rs` resolves to `set_selected_app_id` + `set_selected_app_accent`
+  on the UI thread via `upgrade_in_event_loop`. The registry lives in
+  one place (`ui/app.slint`); Phase 2 of the migration plan adds a
+  vitest parity test that diffs `ui/app.slint`'s tile list against
+  `frontend/shared/src/apps-registry.ts`.
+
+
+
 - **Keyboard accessibility** for the design system. A new
   side-effect CSS file (`frontend/design-system/src/a11y.css`)
   ships with `@ace/design-system` and applies a `:focus-visible`

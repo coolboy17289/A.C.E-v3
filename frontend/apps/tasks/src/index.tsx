@@ -113,7 +113,7 @@ function TasksInner() {
       <RowHeader theme={theme} title={`Tasks · ${open.length}`}>
         <TouchIconButton
           theme={theme} ariaLabel="Add task" icon="➕"
-          onClick={() => {
+          onPointerUp={() => {
             setAdding(true);
             setTimeout(() => inputRef.current?.focus(), 60);
           }}
@@ -162,7 +162,9 @@ function TasksInner() {
               Cancel
             </TouchButton>
           </RowInline>
-          <VirtualKeyboard theme={theme} targetId={focusedInputId} scheme="qwerty" />
+          <VirtualKeyboard theme={theme}
+            value={draft.title}
+            onChange={(v) => setDraft((d) => ({ ...d, title: v }))} />
         </TouchCard>
       )}
 
@@ -273,7 +275,7 @@ function TaskRow({ theme, task, onToggle, onDelete, muted = false }: {
         </div>
         <TouchIconButton
           theme={theme} ariaLabel="Delete task" icon="🗑"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          onPointerUp={(e) => { e.stopPropagation(); onDelete(); }}
         />
       </div>
     </TouchCard>

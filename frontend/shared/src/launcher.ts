@@ -176,7 +176,7 @@ export function rankApps(
 /** Debug helper — produces a one-line summary per app. */
 export function explainRanking(scored: ScoredApp[]): string {
   return scored
-    .map((s) => `${s.app.id.padEnd(10)} ${s.score.toFixed(2)}  (r${s.breakdown.recency.toFixed(2)} f${s.breakdown.frequency.toFixed(2)} t${s.breakdown.timeOfDay.toFixed(2)} c${s.breakdown.context.toFixed(2)})`)
+    .map((s) => `${String(s.app.id).padEnd(10)} ${s.score.toFixed(2)}  (r${s.breakdown.recency.toFixed(2)} f${s.breakdown.frequency.toFixed(2)} t${s.breakdown.timeOfDay.toFixed(2)} c${s.breakdown.context.toFixed(2)})`)
     .join('\n');
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   TouchButton, TouchCard, palette, useResolvedTheme,
+  type ThemeMode,
 } from '@ace/design-system';
 import { api } from '@ace/shared';
 
