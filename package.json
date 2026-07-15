@@ -4,6 +4,7 @@
   "description": "Academic Companion Engine OS - A Linux-based educational operating system for Raspberry Pi (currently minimal: shell + Settings + AI)",
   "private": true,
   "workspaces": [
+    "backend",
     "frontend/desktop-shell",
     "frontend/shared",
     "frontend/apps/ai",
@@ -11,18 +12,20 @@
   ],
   "scripts": {
     "dev:shell": "npm run dev --workspace=@ace/desktop-shell",
-    "dev": "npm run dev --workspace=@ace/desktop-shell",
-    "build": "npm-run-all build:shared build:shell build:apps",
+    "dev:backend": "npm run dev --workspace=@ace/backend",
+    "dev": "npm-run-all --parallel dev:backend dev:shell",
+    "build": "npm-run-all build:shared build:shell build:apps build:backend",
     "build:shared": "npm run build --workspace=@ace/shared",
     "build:shell": "npm run build --workspace=@ace/desktop-shell",
     "build:apps": "npm run build --workspaces --if-present",
+    "build:backend": "npm run build --workspace=@ace/backend",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "verify": "npm-run-all typecheck",
+    "test": "npm run test --workspaces --if-present",
+    "verify": "npm-run-all typecheck test",
     "preview:shell": "npm run preview --workspace=@ace/desktop-shell",
     "raspi:info": "bash raspberry-pi/system/info.sh",
     "raspi:blink": "node raspberry-pi/gpio/scripts/blink.js 17",
     "later:restore:frontend": "echo 'move apps back: mv later/apps/{home,tasks,planner,focus,subjects,statistics} frontend/apps/' && echo 'then add entries back to frontend/shared/src/apps-registry.ts and update vite + tsconfig aliases'",
-    "later:restore:backend": "echo 'mv later/backend ./backend && re-add backend to the workspaces array in package.json'",
     "later:restore:os": "echo 'mv later/os ./os'"
   },
   "devDependencies": {
@@ -36,6 +39,8 @@
     "vite": "^5.4.21"
   },
   "allowScripts": {
-    "esbuild@0.21.5": true
+    "esbuild@0.21.5": true,
+    "better-sqlite3@11.10.0": true,
+    "esbuild@0.28.1": true
   }
 }

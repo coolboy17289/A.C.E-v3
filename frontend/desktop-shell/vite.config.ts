@@ -12,6 +12,17 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 4317,
     strictPort: true,
+    // Proxy /api/* requests through to the local backend during `vite dev`.
+    // The backend runs on 4318 so it doesn't collide with the dev shell
+    // listening on 4317. In production the backend itself serves the
+    // React shell (see backend/src/server.ts) and no proxy is needed.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4318',
+        changeOrigin: true,
+        ws: false,
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
