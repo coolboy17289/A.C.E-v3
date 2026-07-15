@@ -130,6 +130,39 @@ port full features, follow the per-stack READMEs as the entry point.
 
 See [`system/linux-config/INSTALL.md`](system/linux-config/INSTALL.md) for full deployment instructions to Raspberry Pi hardware.
 
+### Boot splash + cross-compiled kernel
+
+A.C.E OS layers a custom Plymouth boot splash over the Pi's
+framebuffer so the first 25 s of boot shows an A.C.E wordmark rather
+than the rainbow square + Linux console. The kernel itself is
+**cross-compiled inside the Docker image build** (Stage 0 of
+`later/os/build/Dockerfile`) against the `rpi-6.6.y` LTS branch with
+an A.C.E kconfig overlay.
+
+| Folder | Why it exists |
+|--------|---------------|
+| `system/boot/splash.svg`           | Canonical wordmark, rasterized at build time |
+| `system/boot/config.txt`           | Suppress rainbow, enable KMS for Plymouth + Wayland |
+| `system/boot/cmdline.txt`          | `quiet splash plymouth.ignore-serial-consoles …` |
+| `system/boot/plymouth/theme/ace.*` | Plymouth `script`-plugin agent + theme metadata |
+| `system/boot/install-plymouth.sh`  | Theme registration + `update-initramfs` rebuild |
+| `system/linux-config/kernel/`      | Cross-compile driver + kconfig fragment |
+
+Helpful npm scripts (see `package.json`):
+
+```bash
+npm run os:boot:render       # locally rasterize splash.svg → PNGs
+npm run os:boot:install-local # install Plymouth theme on this host (debug)
+npm run os:kernel:check      # sanity check fragment + script present
+npm run os:kernel:build      # run build-kernel.sh standalone (debug)
+npm run os:image:build       # full Docker image (kernel + rootfs + Plymouth)
+```
+
+Why Plymouth over `config.txt` splash: the Pi's KMS driver (vc4-kms-v3d)
+replaces the framebuffer firmware splash half-way through boot, so any
+`config.txt` "splash image" flickers. Plymouth owns the DRM device for
+the entire `initramfs → KMS → X/Wayland → desktop` window.
+
 ## Applications
 
 1. **Home** — Dashboard with today's overview & quick actions

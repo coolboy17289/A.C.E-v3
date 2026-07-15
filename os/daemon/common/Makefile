@@ -13,9 +13,9 @@ AR      ?= ar
 ARFLAGS  = rcs
 
 LIB     = libacedcommon.a
-SRCS    = http.c daemon.c
-OBJS    = http.o daemon.o
-HEADERS = http.h daemon.h
+SRCS    = http.c daemon.c log.c
+OBJS    = http.o daemon.o log.o
+HEADERS = http.h daemon.h log.h
 
 TEST_BIN = test_common
 TEST_SRCS = test_common.c
@@ -31,6 +31,9 @@ http.o: http.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 daemon.o: daemon.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+log.o: log.c log.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TEST_BIN): $(TEST_SRCS) $(OBJS) $(HEADERS)

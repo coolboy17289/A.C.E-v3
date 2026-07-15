@@ -3,8 +3,12 @@
  */
 
 #include "daemon.h"
+#include "log.h"
 
 #include <ctype.h>
+#include <errno.h>
+#include <grp.h>
+#include <limits.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -17,6 +21,9 @@ volatile int ace_daemon_should_exit = 0;
 
 static void on_signal(int sig)
 {
+    /* Async-signal-safe: the only thing we touch is a `volatile sig_atomic_t`
+     * global. We don't call into ace_log here because fprintf / clock_gettime
+     * are not safe in a signal handler. */
     (void)sig;
     ace_daemon_should_exit = 1;
 }
@@ -42,9 +49,28 @@ int ace_daemon_drop_privilege(const char *user)
 {
     if (!user || !*user) return 0;
     struct passwd *pw = getpwnam(user);
-    if (!pw) return -1;
-    if (setgid(pw->pw_gid) != 0) return -1;
-    if (setuid(pw->pw_uid) != 0) return -1;
+    if (!pw) {
+        ace_log(ACE_LOG_ERROR, "daemon", "getpwnam(%s) failed", user);
+        return -1;
+    }
+    /* initgroups() first — if we drop the uid before clearing the
+     * supplementary group list, we lose the privilege needed to do so. */
+    if (initgroups(pw->pw_name, pw->pw_gid) != 0) {
+        ace_log(ACE_LOG_ERROR, "daemon", "initgroups(%s) failed", user);
+        return -1;
+    }
+    if (setgid(pw->pw_gid) != 0) {
+        ace_log(ACE_LOG_ERROR, "daemon", "setgid(%u) failed",
+                (unsigned)pw->pw_gid);
+        return -1;
+    }
+    if (setuid(pw->pw_uid) != 0) {
+        ace_log(ACE_LOG_ERROR, "daemon", "setuid(%u) failed",
+                (unsigned)pw->pw_uid);
+        return -1;
+    }
+    ace_log(ACE_LOG_INFO, "daemon", "dropped privilege to user=%s uid=%u",
+            user, (unsigned)pw->pw_uid);
     return 0;
 }
 
@@ -64,8 +90,10 @@ int ace_daemon_env_int(const char *name, int default_value)
     const char *v = getenv(name);
     if (!v) return default_value;
     char *end = NULL;
+    errno = 0;
     long n = strtol(v, &end, 10);
     if (end == v) return default_value;
+    if (errno == ERANGE || n < INT_MIN || n > INT_MAX) return default_value;
     return (int)n;
 }
 
@@ -82,11 +110,11 @@ int ace_daemon_env_string(const char *name, char *out, size_t out_size)
 
 void ace_daemon_log(const char *tag, const char *fmt, ...)
 {
-    fprintf(stderr, "[%s] ", tag ? tag : "aced");
+    /* Back-compat shim: existing callers in os/daemon use this to
+     * emit single-line "[tag] msg" records. Route them through the new
+     * leveled logger at INFO. */
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    ace_logv(ACE_LOG_INFO, tag, fmt, ap);
     va_end(ap);
-    fputc('\n', stderr);
-    fflush(stderr);
 }

@@ -7,10 +7,12 @@
  */
 
 #include "http.h"
+#include "log.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +23,17 @@
 
 #define ACE_HTTP_HEADER_MAX 8192
 #define ACE_HTTP_BODY_MAX   16384
+
+/* Retry a read() call across EINTR. Returns the new read length, or
+ * -1 on a real error / EOF. */
+static ssize_t read_retry(int fd, void *buf, size_t n)
+{
+    for (;;) {
+        ssize_t r = read(fd, buf, n);
+        if (r < 0 && errno == EINTR) continue;
+        return r;
+    }
+}
 
 int ace_http_listen(const char *bind_addr, int port)
 {
@@ -39,12 +52,15 @@ int ace_http_listen(const char *bind_addr, int port)
 
     if (bind(s, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
         int saved = errno;
+        ace_log(ACE_LOG_ERROR, "http", "bind %s:%d: %s",
+                bind_addr ? bind_addr : "127.0.0.1", port, strerror(saved));
         close(s);
         errno = saved;
         return -1;
     }
     if (listen(s, 8) < 0) {
         int saved = errno;
+        ace_log(ACE_LOG_ERROR, "http", "listen %d: %s", port, strerror(saved));
         close(s);
         errno = saved;
         return -1;
@@ -83,7 +99,7 @@ int ace_http_read_request(int fd, ace_http_req_t *out)
     int end_at = -1;
     while (header_len < ACE_HTTP_HEADER_MAX &&
            (end_at = find_header_end(header, header_len)) < 0) {
-        n = read(fd, header + header_len, ACE_HTTP_HEADER_MAX - header_len);
+        n = read_retry(fd, header + header_len, ACE_HTTP_HEADER_MAX - header_len);
         if (n <= 0) { free(header); return -1; }
         header_len += (size_t)n;
     }
@@ -139,7 +155,7 @@ int ace_http_read_request(int fd, ace_http_req_t *out)
             to_read -= already;
         }
         while (to_read > 0) {
-            n = read(fd, out->body + (content_length - to_read), to_read);
+            n = read_retry(fd, out->body + (content_length - to_read), to_read);
             if (n <= 0) { free(out->body); free(header); return -1; }
             to_read -= (size_t)n;
         }
@@ -173,11 +189,15 @@ static const char *status_text(int status)
     switch (status) {
         case 200: return "OK";
         case 201: return "Created";
+        case 204: return "No Content";
         case 400: return "Bad Request";
         case 404: return "Not Found";
         case 405: return "Method Not Allowed";
+        case 408: return "Request Timeout";
+        case 413: return "Payload Too Large";
         case 500: return "Internal Server Error";
-        default:  return "OK";
+        case 503: return "Service Unavailable";
+        default:  return "Unknown";
     }
 }
 
@@ -253,7 +273,10 @@ int ace_http_json_get_int(const char *body, size_t len, const char *key, int *ou
     long v = 0;
     while (p < end && isdigit((unsigned char)*p)) {
         v = v * 10 + (*p - '0');
-        if (v > 1000000000L) return -1;
+        /* Reject anything that would overflow the signed-int range. We
+         * check the absolute value against INT_MAX, then apply the sign
+         * at the end. */
+        if (v > (long)INT_MAX) return -1;
         p++;
     }
     *out = (int)(neg ? -v : v);

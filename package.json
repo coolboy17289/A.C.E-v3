@@ -42,7 +42,12 @@
     "shell:c-gtk4:build":    "make -C frontend/c-gtk4",
     "shell:c-gtk4:run":      "frontend/c-gtk4/ace-c-gtk4",
     "shells:verify":         "node scripts/verify-shells.mjs",
-    "shells:dev-all":        "bash scripts/dev-all.sh"
+    "shells:dev-all":        "bash scripts/dev-all.sh",
+    "os:boot:render":        "bash -c 'mkdir -p system/boot/plymouth/theme && rsvg-convert -w 1024 -h 600 system/boot/splash.svg -o system/boot/plymouth/theme/splash.png && rsvg-convert -w 800 -h 480 system/boot/splash.svg -o system/boot/plymouth/theme/splash-800.png'",
+    "os:boot:install-local": "sudo bash system/boot/install-plymouth.sh",
+    "os:kernel:build":       "bash system/linux-config/kernel/build-kernel.sh",
+    "os:kernel:check":       "bash -c 'set -e; cd system/linux-config/kernel; test -f bcm2711_aceos_defconfig.fragment && test -x build-kernel.sh'",
+    "os:image:build":        "bash -c 'docker build -t ace-os-builder -f later/os/build/Dockerfile .'"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5",
