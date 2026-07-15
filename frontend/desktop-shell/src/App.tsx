@@ -50,31 +50,37 @@ export function App() {
         // 2) Then pull the canonical state from the backend.
         const user = await api.getUser();
         if (cancelled) return;
-        // Use a snapshot of the prefs at *app boot* (the closure value
-        // above) as the "untouched" baseline. Any field the user edits
-        // via the UI between mount and now has a different value, so we
-        // preserve the user's local edit instead of clobbering it with
-        // the backend's value.
-        const initial = prefs;
-        const backend = user.preferences;
-        const keep = <K extends keyof UserPreferences>(k: K): UserPreferences[K] => {
-          const current = useAceStore.getState().preferences[k];
-          return current === initial[k] ? (backend[k] ?? initial[k]) : current;
-        };
-        setPreferences({
-          accentColor: keep('accentColor'),
-          fontScale: keep('fontScale'),
-          reduceMotion: keep('reduceMotion'),
-          notificationsEnabled: keep('notificationsEnabled'),
-          theme: keep('theme'),
-          username: keep('username') || backend.username || user.name,
-        });
+        // The API client returns `null` when the backend is unreachable
+        // (e.g. dev without the ace-core service). In that case the
+        // local prefs from localStorage are already authoritative, so
+        // there's nothing to merge and we skip straight to settings.
+        if (user && user.preferences) {
+          // Use a snapshot of the prefs at *app boot* (the closure value
+          // above) as the "untouched" baseline. Any field the user edits
+          // via the UI between mount and now has a different value, so we
+          // preserve the user's local edit instead of clobbering it with
+          // the backend's value.
+          const initial = prefs;
+          const backend = user.preferences;
+          const keep = <K extends keyof UserPreferences>(k: K): UserPreferences[K] => {
+            const current = useAceStore.getState().preferences[k];
+            return current === initial[k] ? (backend[k] ?? initial[k]) : current;
+          };
+          setPreferences({
+            accentColor: keep('accentColor'),
+            fontScale: keep('fontScale'),
+            reduceMotion: keep('reduceMotion'),
+            notificationsEnabled: keep('notificationsEnabled'),
+            theme: keep('theme'),
+            username: keep('username') || backend.username || user.name,
+          });
+        }
         const settings = await api.getSettings();
         if (cancelled) return;
-        const s = settings as { wallpaper?: unknown };
-        if (typeof s.wallpaper === 'string') {
-          setWallpaper(s.wallpaper);
-          try { localStorage.setItem(WALLPAPER_STORAGE_KEY, s.wallpaper); } catch { /* */ }
+        if (settings && typeof (settings as { wallpaper?: unknown }).wallpaper === 'string') {
+          const s = settings as { wallpaper?: unknown };
+          setWallpaper(s.wallpaper as string);
+          try { localStorage.setItem(WALLPAPER_STORAGE_KEY, s.wallpaper as string); } catch { /* */ }
         }
       } catch (err) {
         // eslint-disable-next-line no-console

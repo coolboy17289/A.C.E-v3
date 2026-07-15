@@ -35,16 +35,34 @@ export class AceApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, {
+  // `baseUrl` is the API root (e.g. '' for same-origin, or
+  // 'http://localhost:4317'). Resource paths already include the '/api'
+  // prefix, so we just join them. A trailing slash on `baseUrl` is
+  // stripped by `configureClient`; a leading one on `path` is required.
+  const url = `${baseUrl}${path}`;
+  const res = await fetch(url, {
     method,
     headers: body ? { 'content-type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
     credentials: 'include',
   });
   const text = await res.text();
-  const payload = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new AceApiError(res.status, payload);
-  return payload as T;
+  if (!res.ok) {
+    // Surface a sane error message even when the server returned HTML
+    // (Vite's dev server falls back to index.html for unknown routes).
+    const trimmed = text.slice(0, 120);
+    throw new AceApiError(res.status, trimmed || null);
+  }
+  // 204 / empty body — return null cast to the expected shape.
+  if (!text) return null as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // Server returned non-JSON on a 2xx — treat as empty rather than
+    // crashing the hydration path. The wallpaper/save flow can then
+    // continue with local state until the backend is reachable.
+    return null as T;
+  }
 }
 
 export const api = {

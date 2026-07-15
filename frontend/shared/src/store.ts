@@ -7,12 +7,62 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import type {
   AppId,
   NotificationRecord,
-  OpenWindow,
   SystemToast,
   UserPreferences,
 } from './types.js';
 import { APP_REGISTRY } from './apps-registry.js';
 import { DEFAULT_WALLPAPER_CSS, type WallpaperPreset } from './wallpapers.js';
+
+/* --------------------------------------------------------------------------
+ * Persistence
+ *
+ * Everything the user customises (wallpaper, theme/accent, active view,
+ * sidebar collapse state) is mirrored into localStorage under a single
+ * JSON blob so the webapp boots straight into the user's last-known layout
+ * — no backend, no setup screen, no flicker. The backend is still pinged
+ * best-effort after first paint; nothing in the UI blocks on it.
+ * ------------------------------------------------------------------------ */
+
+export const USER_STATE_STORAGE_KEY = 'ace:userstate';
+
+/**
+ * The slice we round-trip to/from localStorage. Anything not in this
+ * shape is intentionally NOT persisted (notifications, toasts, etc.).
+ */
+type PersistedUserState = {
+  wallpaper?: string;
+  preferences?: Partial<UserPreferences>;
+  activeView?: ActiveView;
+  sidebarCollapsed?: boolean;
+};
+
+function safeReadPersisted(): PersistedUserState {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(USER_STATE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    // Defensive: if we ever change the schema, unknown keys survive but
+    // missing keys fall through to defaults. Avoids wiping user data on
+    // a partial load failure.
+    return parsed && typeof parsed === 'object' ? (parsed as PersistedUserState) : {};
+  } catch {
+    return {};
+  }
+}
+
+function safeWritePersisted(patch: PersistedUserState) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const current = safeReadPersisted();
+    const next = { ...current, ...patch };
+    localStorage.setItem(USER_STATE_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    /* quota / private-browsing — best-effort */
+  }
+}
+
+export type ActiveView = 'dashboard' | AppId;
 
 interface AceState {
   // User / preferences
@@ -41,16 +91,17 @@ interface AceState {
   bundledBackgrounds: WallpaperPreset[];
   setBundledBackgrounds: (presets: WallpaperPreset[]) => void;
 
-  // Windows
-  windows: OpenWindow[];
-  nextZ: number;
-  openApp: (id: AppId, title?: string) => void;
-  closeWindow: (id: string) => void;
-  focusWindow: (id: string) => void;
-  minimizeWindow: (id: string) => void;
-  toggleMaximizeWindow: (id: string) => void;
-  moveWindow: (id: string, x: number, y: number) => void;
-  resizeWindow: (id: string, w: number, h: number) => void;
+  // -------- Active view + sidebar --------
+  //
+  // Replaces the old `windows`-based routing. The website-style shell
+  // shows exactly one view at a time, picked from `activeView`. Persisted
+  // so the app reopens on the view the user was last using.
+  activeView: ActiveView;
+  setActiveView: (v: ActiveView) => void;
+
+  /** True = collapsed icon-only rail, false = labelled wide rail. */
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
 
   // Notifications
   notifications: NotificationRecord[];
@@ -61,21 +112,11 @@ interface AceState {
   toast: (t: Omit<SystemToast, 'id' | 'ts'>) => void;
   dismissToast: (id: string) => void;
 
-  // Drawer / taskbar / boot / notification panel
-  launcherOpen: boolean;
-  setLauncherOpen: (open: boolean) => void;
-  /**
-   * Separate flag for the bell-button notification panel. Kept distinct
-   * from `launcherOpen` so the bell and the launcher don't fight each
-   * other when the user has both panels in their head. The notification
-   * panel auto-opens on a transition to "has unread" and can also be
-   * toggled manually from the topbar bell.
-   */
+  // Sidebar bell-button popover state. Kept separate from the (removed)
+  // launcher drawer so future launchers don't accidentally suppress it.
   notifCenterOpen: boolean;
   setNotifCenterOpen: (open: boolean) => void;
   toggleNotifCenter: () => void;
-  booting: boolean;
-  bootDone: () => void;
 }
 
 const defaultPrefs: UserPreferences = {
@@ -87,83 +128,65 @@ const defaultPrefs: UserPreferences = {
   username: 'Student',
 };
 
+// Hydrate from localStorage *before* the store is created so the very
+// first React paint already shows the correct view + wallpaper. Reading
+// here means we don't flash the dashboard then swap to the user's last
+// view after a mount-time useEffect fires.
+const _persisted = safeReadPersisted();
+const hydratePrefs: UserPreferences = {
+  ...defaultPrefs,
+  ...(_persisted.preferences ?? {}),
+  // If the saved username is empty (e.g. cleared in Settings) fall back
+  // to the canonical default. Prevents the greeting from saying ", ".
+  username:
+    (_persisted.preferences?.username ?? defaultPrefs.username) || defaultPrefs.username,
+};
+
 export const useAceStore = create<AceState>()(
   subscribeWithSelector((set, get) => ({
-    username: defaultPrefs.username,
+    username: hydratePrefs.username,
     avatar: '🦊',
-    preferences: defaultPrefs,
+    preferences: hydratePrefs,
     setPreferences: (p) =>
-      set((s) => ({ preferences: { ...s.preferences, ...p } })),
-    setUser: (username, avatar) => set({ username, avatar }),
+      set((s) => {
+        const next = { ...s.preferences, ...p };
+        // Persist immediately so reloads stay consistent. We persist the
+        // full preferences slice (cheap) rather than try to compute a
+        // delta — UI fields flip often enough that diffing is more
+        // error-prone than just resaving.
+        safeWritePersisted({ preferences: next });
+        return { preferences: next };
+      }),
+    setUser: (username, avatar) =>
+      set(() => {
+        safeWritePersisted({ preferences: { username } });
+        return { username, avatar };
+      }),
 
-    wallpaper: DEFAULT_WALLPAPER_CSS,
-    setWallpaper: (css) => set({ wallpaper: css || DEFAULT_WALLPAPER_CSS }),
+    wallpaper: _persisted.wallpaper || DEFAULT_WALLPAPER_CSS,
+    setWallpaper: (css) =>
+      set(() => {
+        const value = css || DEFAULT_WALLPAPER_CSS;
+        safeWritePersisted({ wallpaper: value });
+        return { wallpaper: value };
+      }),
 
     bundledBackgrounds: [],
     setBundledBackgrounds: (presets) => set({ bundledBackgrounds: presets }),
 
-    windows: [],
-    nextZ: 10,
-    openApp: (id, title) => {
-      const existing = get().windows.find((w) => w.appId === id && !w.maximized);
-      if (existing) {
-        get().focusWindow(existing.id);
-        return;
-      }
-      // Resolve the title from the registry first so the window chrome
-      // shows the same label the launcher tile does. Fall back to a
-      // title-cased id for apps parked in later/ (no registry entry).
-      const meta = APP_REGISTRY.find((a) => a.id === id);
-      const z = get().nextZ + 1;
-      const idStr = `${id}-${Math.random().toString(36).slice(2, 8)}`;
-      const width = Math.min(820, Math.max(560, window.innerWidth - 80));
-      const height = Math.min(620, Math.max(420, window.innerHeight - 140));
-      const x = Math.max(24, (window.innerWidth - width) / 2);
-      const y = Math.max(24, (window.innerHeight - height) / 3);
-      set((s) => ({
-        nextZ: z,
-        windows: [
-          ...s.windows,
-          {
-            id: idStr,
-            appId: id,
-            title:
-              title ??
-              meta?.name ??
-              (id ? id[0].toUpperCase() + id.slice(1) : 'App'),
-            x, y, width, height,
-            zIndex: z,
-            minimized: false,
-            maximized: false,
-          },
-        ],
-      }));
-    },
-    closeWindow: (id) =>
-      set((s) => ({ windows: s.windows.filter((w) => w.id !== id) })),
-    focusWindow: (id) => {
-      const z = get().nextZ + 1;
-      set((s) => ({
-        nextZ: z,
-        windows: s.windows.map((w) => (w.id === id ? { ...w, minimized: false, zIndex: z } : w)),
-      }));
-    },
-    minimizeWindow: (id) =>
-      set((s) => ({
-        windows: s.windows.map((w) => (w.id === id ? { ...w, minimized: !w.minimized } : w)),
-      })),
-    toggleMaximizeWindow: (id) =>
-      set((s) => ({
-        windows: s.windows.map((w) => (w.id === id ? { ...w, maximized: !w.maximized } : w)),
-      })),
-    moveWindow: (id, x, y) =>
-      set((s) => ({
-        windows: s.windows.map((w) => (w.id === id ? { ...w, x, y } : w)),
-      })),
-    resizeWindow: (id, width, height) =>
-      set((s) => ({
-        windows: s.windows.map((w) => (w.id === id ? { ...w, width, height } : w)),
-      })),
+    activeView: _persisted.activeView ?? 'dashboard',
+    setActiveView: (v) =>
+      set(() => {
+        safeWritePersisted({ activeView: v });
+        return { activeView: v };
+      }),
+
+    sidebarCollapsed: _persisted.sidebarCollapsed ?? false,
+    setSidebarCollapsed: (collapsed) =>
+      set(() => {
+        safeWritePersisted({ sidebarCollapsed: collapsed });
+        return { sidebarCollapsed: collapsed };
+      }),
 
     notifications: [],
     pushNotification: (n) => {
@@ -193,14 +216,8 @@ export const useAceStore = create<AceState>()(
     dismissToast: (id) =>
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-    launcherOpen: false,
-    setLauncherOpen: (open) => set({ launcherOpen: open }),
-
     notifCenterOpen: false,
     setNotifCenterOpen: (open) => set({ notifCenterOpen: open }),
     toggleNotifCenter: () => set((s) => ({ notifCenterOpen: !s.notifCenterOpen })),
-
-    booting: true,
-    bootDone: () => set({ booting: false }),
   })),
 );

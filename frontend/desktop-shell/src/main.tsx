@@ -10,11 +10,13 @@ import './styles.css';
 // the merged preset list already populated.
 import './backgrounds-bridge';
 
-// In a deployed A.C.E image the desktop shell is served by the ace-core
-// service on port 4317. In dev the backend runs on 4317 too, so this is the
-// only sensible default. On the Pi the bundled files are static and Chromium
-// simply hits /api/* on the same origin served by the backend.
-configureClient('/api');
+// Wire the shared HTTP client. The desktop shell always talks to its
+// own origin (the ace-core service in production, the Vite dev server
+// in development) and resource paths in `api` are already prefixed
+// with `/api/...`, so the base URL is empty in the same-origin case.
+// Override with `window.__ACE_API_URL__` or `VITE_API_URL` for setups
+// where the API lives on a different origin.
+configureClient((import.meta as any)?.env?.VITE_API_URL || '');
 
 const root = createRoot(document.getElementById('root')!);
 root.render(
