@@ -160,4 +160,7 @@ Note erros are fin and to be ignored at this stage
 update Next step is to fix thems and add mreo apps fix light and dark mode and try and make the first iso not done yet      
 update v1.2.4 --beta is the neweset version 
       Next step is to fix thems and add mreo apps fix light and dark mode and try and make the first iso 
-Update starting version2 --beta note fully recodeing codebase for better performance and #typscritsucks      
+Update starting version2 --beta note fully recodeing codebase for better performance and #typscritsucks   
+update started recodeing timestamp jul 15 19 50   
+    note next fex pushes will still stay on version 2 till the main gui works 
+    

@@ -56,6 +56,7 @@ typedef struct {
     const char *path;
     char       *body;        /* malloc'd, may be empty */
     size_t      body_len;
+    char       *_header;     /* private: backing buffer for method/path */
 } ace_http_req_t;
 
 typedef struct {

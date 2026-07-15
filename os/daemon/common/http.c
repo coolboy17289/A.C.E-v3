@@ -70,6 +70,10 @@ int ace_http_read_request(int fd, ace_http_req_t *out)
     if (!out) return -1;
     memset(out, 0, sizeof(*out));
 
+    /* We keep a single buffer for the request line + the rest of the
+     * header lines, then store pointers into it for `method` and `path`.
+     * The buffer is owned by the request and freed by
+     * ace_http_free_request() (via the private `_header` field). */
     char *header = malloc(ACE_HTTP_HEADER_MAX);
     if (!header) return -1;
     size_t header_len = 0;
@@ -93,13 +97,11 @@ int ace_http_read_request(int fd, ace_http_req_t *out)
     char *sp1 = strchr(header, ' ');
     if (!sp1) { free(header); return -1; }
     *sp1 = '\0';
-    out->method = header;
 
     char *path = sp1 + 1;
     char *sp2 = strchr(path, ' ');
     if (!sp2) { free(header); return -1; }
     *sp2 = '\0';
-    out->path = path;
 
     /* Content-Length: parse from header lines. */
     size_t content_length = 0;
@@ -120,10 +122,15 @@ int ace_http_read_request(int fd, ace_http_req_t *out)
         free(header);
         return -1;
     }
+
+    /* Read body bytes. The trailing bytes already in `header` past the
+     * CRLFCRLF get copied forward into `out->body`; the rest is read
+     * off the socket. */
+    out->body = malloc(content_length + 1);
+    if (!out->body) { free(header); return -1; }
+    out->body_len = content_length;
+    out->body[content_length] = '\0';
     if (content_length > 0) {
-        out->body = malloc(content_length + 1);
-        if (!out->body) { free(header); return -1; }
-        /* We've already consumed up to end_at+4. Read the rest from fd. */
         size_t already = header_len - (size_t)(end_at + 4);
         size_t to_read = content_length;
         if (already > 0) {
@@ -131,28 +138,33 @@ int ace_http_read_request(int fd, ace_http_req_t *out)
             memcpy(out->body, header + end_at + 4, already);
             to_read -= already;
         }
-        out->body_len = content_length;
-        out->body[content_length] = '\0';
         while (to_read > 0) {
             n = read(fd, out->body + (content_length - to_read), to_read);
             if (n <= 0) { free(out->body); free(header); return -1; }
             to_read -= (size_t)n;
         }
-    } else {
-        out->body = malloc(1);
-        if (!out->body) { free(header); return -1; }
-        out->body[0] = '\0';
-        out->body_len = 0;
     }
-    free(header);
+
+    /* The method/path strings live inside `header`. We could shorten
+     * `header` to just the part we need, but the savings (~200 bytes
+     * per request) aren't worth the extra malloc. Stash the buffer in
+     * the private slot and only set the public fields after that, so
+     * the request is never observed in a half-built state. */
+    out->_header = header;
+    out->method  = header;
+    out->path    = path;
     return 0;
 }
 
 void ace_http_free_request(ace_http_req_t *req)
 {
     if (!req) return;
+    free(req->_header);
     free(req->body);
-    req->body = NULL;
+    req->_header = NULL;
+    req->body    = NULL;
+    req->method  = NULL;
+    req->path    = NULL;
     req->body_len = 0;
 }
 

@@ -29,7 +29,20 @@
     "raspi:blink": "node raspberry-pi/gpio/scripts/blink.js 17",
     "raspi:ollama": "bash system/linux-config/install-ollama.sh",
     "later:restore:frontend": "echo 'move apps back: mv later/apps/{home,tasks,planner,focus,subjects,statistics} frontend/apps/' && echo 'then add entries back to frontend/shared/src/apps-registry.ts and update vite + tsconfig aliases'",
-    "later:restore:os": "echo 'mv later/os ./os'"
+    "later:restore:os": "echo 'mv later/os ./os'",
+    "shell:nextjs:dev":      "npm --prefix frontend/nextjs      run dev",
+    "shell:nextjs:build":    "npm --prefix frontend/nextjs      run build",
+    "shell:rust-iced:run":   "cargo run  --manifest-path frontend/rust-iced/Cargo.toml --release",
+    "shell:rust-iced:check": "cargo check --manifest-path frontend/rust-iced/Cargo.toml",
+    "shell:rust-slint:run":  "cargo run  --manifest-path frontend/rust-slint/Cargo.toml --release",
+    "shell:rust-slint:check":"cargo check --manifest-path frontend/rust-slint/Cargo.toml",
+    "shell:cpp-qt:build":    "cmake -S frontend/cpp-qt -B frontend/cpp-qt/build && cmake --build frontend/cpp-qt/build",
+    "shell:cpp-qt:run":      "frontend/cpp-qt/build/ace-cpp-qt",
+    "shell:java-javafx:run": "mvn -B -f frontend/java-javafx/pom.xml javafx:run",
+    "shell:c-gtk4:build":    "make -C frontend/c-gtk4",
+    "shell:c-gtk4:run":      "frontend/c-gtk4/ace-c-gtk4",
+    "shells:verify":         "node scripts/verify-shells.mjs",
+    "shells:dev-all":        "bash scripts/dev-all.sh"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5",
