@@ -6,3 +6,5 @@ export * from './store.js';
 export * from './bus.js';
 export * from './utils.js';
 export * from './seed.js';
+export * from './wallpapers.js';
+export * from './icons.jsx';

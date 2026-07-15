@@ -1,15 +1,21 @@
 import React from 'react';
-import { APP_REGISTRY, useAceStore } from '@ace/shared';
+import { APP_REGISTRY, AppTile, Icon, useAceStore } from '@ace/shared';
 
 /**
  * Drawer-style launcher. Slides up from the taskbar when the A.C.E button is
  * pressed; this is the user's primary launch surface. It also doubles as a
  * notification centre when called from the top bell button.
+ *
+ * Each tile is rendered with the new AppTile component (gradient background
+ * + white SVG glyph) instead of the legacy emoji swatch.
  */
 export const Launcher: React.FC = () => {
   const close = () => useAceStore.getState().setLauncherOpen(false);
   const openApp = useAceStore((s) => s.openApp);
   const setUser = useAceStore((s) => s.setUser);
+  const setLauncherOpen = useAceStore((s) => s.setLauncherOpen);
+  const openSettings = useAceStore.getState().openApp;
+
   const username = useAceStore((s) => s.username);
   const avatar = useAceStore((s) => s.avatar);
   const notifications = useAceStore((s) => s.notifications);
@@ -23,39 +29,29 @@ export const Launcher: React.FC = () => {
         onClick={close}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
-      <div className="absolute left-0 right-0 bottom-0 max-h-[80%] rounded-t-3xl border-t border-white/10 bg-[#0d1330]/95 backdrop-blur shadow-window p-5 overflow-y-auto">
+      <div
+        className="absolute left-0 right-0 bottom-0 max-h-[80%] rounded-t-3xl border-t border-white/10 backdrop-blur shadow-window p-5 overflow-y-auto"
+        style={{ background: 'var(--ace-glass)' }}
+      >
         <div className="mx-auto w-12 h-1.5 rounded-full bg-white/20 mb-4" />
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           <section>
             <div className="flex items-baseline justify-between mb-3">
               <h2 className="text-lg font-semibold">All Apps</h2>
-              <span className="text-xs text-ace-muted">
-                {APP_REGISTRY.length} installed
-              </span>
+              <span className="text-xs text-ace-muted">{APP_REGISTRY.length} installed</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {APP_REGISTRY.map((app) => (
                 <button
                   key={app.id}
                   data-testid={`launcher-${app.id}`}
-                  onClick={() => {
-                    openApp(app.id);
-                    close();
-                  }}
-                  className="ace-tile p-4 text-left"
+                  onClick={() => { openApp(app.id); close(); }}
+                  className="ace-tile p-4 text-left flex flex-col gap-3"
                 >
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-3"
-                    style={{
-                      background: `linear-gradient(135deg, ${app.accent}66, ${app.accent}22)`,
-                      border: `1px solid ${app.accent}55`,
-                    }}
-                  >
-                    {app.icon}
-                  </div>
-                  <div className="font-semibold">{app.name}</div>
-                  <div className="text-xs text-ace-muted mt-1 line-clamp-2">
-                    {app.description}
+                  <AppTile appId={app.id} accent={app.accent} size={56} aria-hidden />
+                  <div className="leading-tight">
+                    <div className="font-semibold">{app.name}</div>
+                    <div className="text-xs text-ace-muted mt-1 line-clamp-2">{app.description}</div>
                   </div>
                 </button>
               ))}
@@ -66,10 +62,10 @@ export const Launcher: React.FC = () => {
             <div className="ace-card">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-                  style={{ background: 'linear-gradient(135deg,#60a5fa,#a78bfa)' }}
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'var(--ace-accent-soft)' }}
                 >
-                  {avatar}
+                  <Icon name="user" size={26} style={{ color: 'var(--ace-accent)' }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <input
@@ -78,15 +74,29 @@ export const Launcher: React.FC = () => {
                     onChange={(e) => setUser(e.target.value, avatar)}
                     aria-label="Display name"
                   />
+                  <p className="mt-2 text-[11px] text-ace-muted">
+                    Tap{' '}
+                    <button
+                      type="button"
+                      className="underline"
+                      onClick={() => { openSettings('settings'); close(); }}
+                    >
+                      Settings
+                    </button>{' '}
+                    to change wallpaper, theme and accent.
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="ace-card">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-ace-muted">
-                  Notifications
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Icon name="bell" size={16} style={{ color: 'var(--ace-accent)' }} />
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-ace-muted">
+                    Notifications
+                  </h3>
+                </div>
                 <button
                   className="text-xs text-ace-muted hover:text-white"
                   onClick={clearNotifications}
@@ -106,13 +116,15 @@ export const Launcher: React.FC = () => {
                         n.read ? 'bg-white/[0.02]' : 'bg-white/[0.06]'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="text-sm font-medium">{n.title}</div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-medium">{n.title}</div>
+                          <p className="text-xs text-ace-muted mt-1">{n.message}</p>
+                        </div>
                         {!n.read && (
-                          <span className="w-2 h-2 rounded-full bg-ace-accent mt-1" />
+                          <span className="w-2 h-2 rounded-full mt-1" style={{ background: 'var(--ace-accent)' }} />
                         )}
                       </div>
-                      <p className="text-xs text-ace-muted mt-1">{n.message}</p>
                     </li>
                   ))}
                 </ul>
@@ -120,6 +132,15 @@ export const Launcher: React.FC = () => {
             </div>
           </aside>
         </div>
+
+        <button
+          type="button"
+          className="ace-nav-row mt-4"
+          onClick={() => { setLauncherOpen(false); openApp('settings'); }}
+        >
+          <Icon name="palette" size={18} />
+          Theme & Wallpaper
+        </button>
       </div>
     </div>
   );

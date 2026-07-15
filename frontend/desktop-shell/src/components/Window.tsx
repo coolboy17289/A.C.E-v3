@@ -1,5 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import { APP_REGISTRY, useAceStore, classNames } from '@ace/shared';
+import { APP_REGISTRY, AppTile, Icon, useAceStore, classNames } from '@ace/shared';
 import type { OpenWindow } from '@ace/shared';
 import { AppHost } from './AppHost';
 
@@ -12,8 +12,10 @@ const TOPBAR_HEIGHT = 48;
 
 /**
  * Single draggable, resizable window frame. Drag works through pointer
- * events so it stays touch-friendly on the 7" touchscreen, and the corner /
- * edges support resizing with the same pointer-based model.
+ * events so it stays touch-friendly on the 7" touchscreen.
+ *
+ * Title bar icons are SVG glyphs from @ace/shared/icons so the chrome
+ * matches the launcher tiles.
  */
 export const Window: React.FC<Props> = ({ window: w }) => {
   const focus = useAceStore((s) => s.focusWindow);
@@ -93,7 +95,7 @@ export const Window: React.FC<Props> = ({ window: w }) => {
       data-testid={`window-${w.appId}`}
       onPointerDown={() => focus(w.id)}
       className={classNames(
-        'absolute rounded-2xl overflow-hidden bg-[#0d1330]/95 border border-white/10 shadow-window backdrop-blur',
+        'absolute rounded-2xl overflow-hidden border backdrop-blur',
         w.minimized && 'opacity-0 pointer-events-none',
       )}
       style={{
@@ -102,47 +104,40 @@ export const Window: React.FC<Props> = ({ window: w }) => {
         width: w.maximized ? '100%' : w.width,
         height: w.maximized ? `calc(100% - ${TOPBAR_HEIGHT + TASKBAR_HEIGHT}px)` : w.height,
         zIndex: w.zIndex,
+        background: 'var(--ace-glass)',
+        borderColor: 'var(--ace-border)',
+        boxShadow: 'var(--ace-shadow)',
       }}
     >
       <div
         onPointerDown={onPointerDownDrag}
         onPointerMove={onPointerMoveDrag}
         onPointerUp={onPointerUpDrag}
-        // touch-action: none disables browser scroll/zoom so pointer drag is
-        // unambiguously a window drag on the 7" touchscreen.
-        style={{ touchAction: 'none' }}
-        className="h-10 flex items-center gap-2 px-3 select-none cursor-grab active:cursor-grabbing border-b border-white/5"
+        className="h-11 flex items-center gap-2 px-3 select-none cursor-grab active:cursor-grabbing border-b border-white/5"
         style={{
-          background: `linear-gradient(180deg, ${meta?.accent ?? '#60a5fa'}33, transparent)`,
+          touchAction: 'none',
+          background: `linear-gradient(180deg, ${meta?.accent ?? 'var(--ace-accent)'}33, transparent)`,
         }}
       >
-        <span className="text-base" aria-hidden>{meta?.icon}</span>
+        <AppTile
+          appId={(meta?.id ?? 'ai') as 'ai'}
+          accent={meta?.accent ?? '#22d3ee'}
+          size={22}
+        />
         <span className="text-sm font-semibold truncate">{w.title}</span>
         <div className="flex-1" />
-        <button
-          aria-label="Minimise"
-          className="w-8 h-8 rounded-md hover:bg-white/10 flex items-center justify-center"
-          onClick={(e) => { e.stopPropagation(); minimize(w.id); }}
-        >
-          ▁
-        </button>
-        <button
-          aria-label={w.maximized ? 'Restore' : 'Maximise'}
-          className="w-8 h-8 rounded-md hover:bg-white/10 flex items-center justify-center"
-          onClick={(e) => { e.stopPropagation(); maximize(w.id); }}
-        >
-          ▢
-        </button>
-        <button
-          aria-label="Close"
-          className="w-8 h-8 rounded-md hover:bg-red-500/40 flex items-center justify-center"
-          onClick={(e) => { e.stopPropagation(); close(w.id); }}
-        >
-          ✕
-        </button>
+        <ControlButton ariaLabel="Minimise" onClick={(e) => { e.stopPropagation(); minimize(w.id); }}>
+          <Icon name="minimize" size={14} />
+        </ControlButton>
+        <ControlButton ariaLabel={w.maximized ? 'Restore' : 'Maximise'} onClick={(e) => { e.stopPropagation(); maximize(w.id); }}>
+          <Icon name={w.maximized ? 'chevron-right' : 'maximize'} size={14} />
+        </ControlButton>
+        <ControlButton ariaLabel="Close" danger onClick={(e) => { e.stopPropagation(); close(w.id); }}>
+          <Icon name="close" size={14} />
+        </ControlButton>
       </div>
 
-      <div className="absolute inset-x-0 top-10 bottom-0 overflow-hidden">
+      <div className="absolute inset-x-0 top-11 bottom-0 overflow-hidden">
         <AppHost appId={w.appId} />
       </div>
 
@@ -163,7 +158,7 @@ export const Window: React.FC<Props> = ({ window: w }) => {
               onPointerDown={beginResize(e)}
               onPointerMove={onResizeMove}
               onPointerUp={endResize}
-              className={`absolute top-10 bottom-0 w-2 ${e === 'e' ? '-right-1' : '-left-1'} cursor-ew-resize`}
+              className={`absolute top-11 bottom-0 w-2 ${e === 'e' ? '-right-1' : '-left-1'} cursor-ew-resize`}
             />
           ))}
           {(['nw','ne','sw','se'] as ResizeEdge[]).map((e) => (
@@ -186,5 +181,25 @@ export const Window: React.FC<Props> = ({ window: w }) => {
     </div>
   );
 };
+
+const ControlButton: React.FC<{
+  ariaLabel: string;
+  onClick: (e: React.MouseEvent) => void;
+  danger?: boolean;
+  children: React.ReactNode;
+}> = ({ ariaLabel, onClick, danger, children }) => (
+  <button
+    aria-label={ariaLabel}
+    className="w-8 h-8 rounded-md flex items-center justify-center transition"
+    style={{ color: 'inherit' }}
+    onClick={onClick}
+    onMouseEnter={(e) => {
+      (e.currentTarget as HTMLElement).style.background = danger ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.10)';
+    }}
+    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+  >
+    {children}
+  </button>
+);
 
 type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';

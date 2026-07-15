@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "main": "src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "main": "src/index.tsx",
+  "exports": { ".": "./src/index.tsx" },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"

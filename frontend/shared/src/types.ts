@@ -2,13 +2,22 @@
 // Anything a module exposes to the desktop shell should live here
 // so that the shell can statically understand the contract.
 
+// AppId is the full historical union. Only ids currently listed in
+// `apps-registry.ts` actually ship — the others are intentionally parked
+// in `later/apps/` and surface via AppHost's "Coming soon" stub.
 export type AppId =
+  /** @deprecated parked in later/apps/home — move it back to ship. */
   | 'home'
+  /** @deprecated parked in later/apps/planner — move it back to ship. */
   | 'planner'
+  /** @deprecated parked in later/apps/tasks — move it back to ship. */
   | 'tasks'
+  /** @deprecated parked in later/apps/focus — move it back to ship. */
   | 'focus'
+  /** @deprecated parked in later/apps/subjects — move it back to ship. */
   | 'subjects'
   | 'ai'
+  /** @deprecated parked in later/apps/statistics — move it back to ship. */
   | 'statistics'
   | 'settings';
 

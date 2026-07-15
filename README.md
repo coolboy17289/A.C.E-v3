@@ -109,3 +109,29 @@ MIT
 
 v1 was pushed at  (15 July 2026 at 15:42)
    initail com is still v1 with json files beng the main change 
+Update: v1.01 -- beta was a debug due to an old code file 
+Update: v1.01.1 --beta adds files for the raspberry py to control gpio camara sensors ect..
+  Note: not being pushed due to bugs
+  Note: more erros found in /home/Lihan/A.C.E/frontend/apps/ai/tsconfig.json
+  Note: error is [{
+	"resource": "/home/Lihan/A.C.E/frontend/apps/ai/tsconfig.json",
+	"owner": "typescript",
+	"severity": 8,
+	"message": "Option 'baseUrl' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error.\n  Visit https://aka.ms/ts6 for migration information.",
+	"source": "ts",
+	"startLineNumber": 3,
+	"startColumn": 3,
+	"endLineNumber": 3,
+	"endColumn": 20,
+	"origin": "extHost1"
+}]
+Note: cant find main error Timestamp Jul15 at 1618 hr 
+Note: sorry for using military time as im a cadet and im use to that [nzcf website fpr refrece to cadets](https://cadetforces.org.nz/)
+
+Note: Error found in the ai app folder api error and due to taht no important till later on timestamp 1622 hr
+Update: adding settings app and finish codeing gui ran by npm run dev time stamp 1623hr 
+Note: 2nd error but not for this project idk how that code got into my codebase timestamp jul 15 1629hr
+Update:adding backround folder ato add more background timestamp jul 15 1717 hr
+Update: 4 errors ![screenshot](image.png) timestame jul15 17:23
+Note using claude for debugging 
+Update pushing v1.2.0 --beta with kind of working gui

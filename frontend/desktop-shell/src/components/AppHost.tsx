@@ -1,42 +1,37 @@
 import React from 'react';
 import type { AppId } from '@ace/shared';
 
-import HomeApp from '@ace/app-home';
-import PlannerApp from '@ace/app-planner';
-import TasksApp from '@ace/app-tasks';
-import FocusApp from '@ace/app-focus';
-import SubjectsApp from '@ace/app-subjects';
 import AiApp from '@ace/app-ai';
-import StatisticsApp from '@ace/app-statistics';
 import SettingsApp from '@ace/app-settings';
 
 /**
  * Renders the React module for the given appId inside the window frame.
  *
- * The apps are plain React components - the shell doesn't impose a router -
- * because every app is self-contained and has its own internal navigation.
- * This keeps the per-app bundle small and the touch latency low on the Pi.
+ * Only the apps we currently ship are wired here. Other AppIds still
+ * exist in the union type but resolve to the "Unknown app" fallback so
+ * the build stays small — anything in `later/apps/*` can be plugged
+ * back in without expanding the type.
  */
-const REGISTRY: Record<AppId, React.ComponentType> = {
-  home: HomeApp,
-  planner: PlannerApp,
-  tasks: TasksApp,
-  focus: FocusApp,
-  subjects: SubjectsApp,
+const REGISTRY: Partial<Record<AppId, React.ComponentType>> = {
   ai: AiApp,
-  statistics: StatisticsApp,
   settings: SettingsApp,
 };
 
+const ComingSoon: React.FC<{ appId: AppId }> = ({ appId }) => (
+  <div className="h-full w-full flex flex-col items-center justify-center gap-3 px-8 text-center text-ace-muted">
+    <div className="text-3xl">✨</div>
+    <div className="text-lg font-semibold text-ace-ink">{appId} is on the way</div>
+    <p className="text-sm">
+      This app is parked in <code>later/apps/</code> for now.
+      Move it back into the workspace and add it to{' '}
+      <code>@ace/shared/apps-registry.ts</code> to ship it.
+    </p>
+  </div>
+);
+
 export const AppHost: React.FC<{ appId: AppId }> = ({ appId }) => {
   const Component = REGISTRY[appId];
-  if (!Component) {
-    return (
-      <div className="h-full w-full flex items-center justify-center text-ace-muted">
-        Unknown app: {appId}
-      </div>
-    );
-  }
+  if (!Component) return <ComingSoon appId={appId} />;
   return (
     <div className="h-full w-full overflow-auto">
       <Component />

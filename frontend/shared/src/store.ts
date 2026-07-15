@@ -11,14 +11,34 @@ import type {
   SystemToast,
   UserPreferences,
 } from './types.js';
+import { DEFAULT_WALLPAPER_CSS, type WallpaperPreset } from './wallpapers.js';
 
 interface AceState {
   // User / preferences
   username: string;
-  avatar: string; // emoji
+  avatar: string; // emoji or short identifier; the actual visual is rendered
   preferences: UserPreferences;
   setPreferences: (p: Partial<UserPreferences>) => void;
   setUser: (username: string, avatar: string) => void;
+
+  // Wallpaper + theming
+  /**
+   * Either a CSS background string (preset or hand-built) or a `data:image/...`
+   * url pointing at an uploaded image. Stored locally so the desktop stays
+   * themed before the backend has responded.
+   */
+  wallpaper: string;
+  setWallpaper: (css: string) => void;
+
+  /**
+   * Image presets auto-discovered from `desktop-shell/public/backgrounds/`
+   * at build/dev time via `import.meta.glob` in `backgrounds-bridge.ts`.
+   * Empty until the bridge fires on boot — the Settings app merges this
+   * list in front of the static CSS presets so newly-dropped PNGs are
+   * picked up automatically without code edits.
+   */
+  bundledBackgrounds: WallpaperPreset[];
+  setBundledBackgrounds: (presets: WallpaperPreset[]) => void;
 
   // Windows
   windows: OpenWindow[];
@@ -64,6 +84,12 @@ export const useAceStore = create<AceState>()(
     setPreferences: (p) =>
       set((s) => ({ preferences: { ...s.preferences, ...p } })),
     setUser: (username, avatar) => set({ username, avatar }),
+
+    wallpaper: DEFAULT_WALLPAPER_CSS,
+    setWallpaper: (css) => set({ wallpaper: css || DEFAULT_WALLPAPER_CSS }),
+
+    bundledBackgrounds: [],
+    setBundledBackgrounds: (presets) => set({ bundledBackgrounds: presets }),
 
     windows: [],
     nextZ: 10,

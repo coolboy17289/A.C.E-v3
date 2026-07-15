@@ -11,13 +11,7 @@
   },
   "dependencies": {
     "@ace/shared": "*",
-    "@ace/app-home": "*",
-    "@ace/app-planner": "*",
-    "@ace/app-tasks": "*",
-    "@ace/app-focus": "*",
-    "@ace/app-subjects": "*",
     "@ace/app-ai": "*",
-    "@ace/app-statistics": "*",
     "@ace/app-settings": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

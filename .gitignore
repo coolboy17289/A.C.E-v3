@@ -44,14 +44,27 @@ backend/logs/
 # Testing
 coverage/
 .nyc_output/
+.vitest/
 
 # Misc
 .cache/
 .parcel-cache/
 .next/
 .nuxt/
+.chromium/
+.chromium-cache/
 
 # OS generated files
 Thumbs.db
 ehthumbs.db
 desktop.ini
+
+# A.C.E specific
+os/build/*.img
+os/build/*.img.zip
+os/build/rootfs/
+os/build/workspace/
+opt/ace/media/
+system/
+later/
+hardware/
