@@ -5,12 +5,14 @@
   "private": true,
   "workspaces": [
     "backend",
+    "frontend/design-system",
     "frontend/desktop-shell",
     "frontend/shared",
     "frontend/apps/ai",
     "frontend/apps/focus",
     "frontend/apps/home",
-    "frontend/apps/settings"
+    "frontend/apps/settings",
+    "frontend/apps/tasks"
   ],
   "scripts": {
     "dev:shell": "npm run dev --workspace=@ace/desktop-shell",
@@ -23,7 +25,10 @@
     "build:backend": "npm run build --workspace=@ace/backend",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "verify": "npm-run-all typecheck test",
+    "shells:verify": "node scripts/verify-shells.mjs",
+    "shells:verify:if-up": "node scripts/verify-shells-gated.mjs",
+    "verify": "npm-run-all typecheck test shells:verify:if-up",
+    "verify:full": "npm-run-all typecheck test shells:verify",
     "preview:shell": "npm run preview --workspace=@ace/desktop-shell",
     "raspi:info": "bash raspberry-pi/system/info.sh",
     "raspi:blink": "node raspberry-pi/gpio/scripts/blink.js 17",
@@ -41,13 +46,19 @@
     "shell:java-javafx:run": "mvn -B -f frontend/java-javafx/pom.xml javafx:run",
     "shell:c-gtk4:build":    "make -C frontend/c-gtk4",
     "shell:c-gtk4:run":      "frontend/c-gtk4/ace-c-gtk4",
-    "shells:verify":         "node scripts/verify-shells.mjs",
     "shells:dev-all":        "bash scripts/dev-all.sh",
     "os:boot:render":        "bash -c 'mkdir -p system/boot/plymouth/theme && rsvg-convert -w 1024 -h 600 system/boot/splash.svg -o system/boot/plymouth/theme/splash.png && rsvg-convert -w 800 -h 480 system/boot/splash.svg -o system/boot/plymouth/theme/splash-800.png'",
     "os:boot:install-local": "sudo bash system/boot/install-plymouth.sh",
     "os:kernel:build":       "bash system/linux-config/kernel/build-kernel.sh",
     "os:kernel:check":       "bash -c 'set -e; cd system/linux-config/kernel; test -f bcm2711_aceos_defconfig.fragment && test -x build-kernel.sh'",
-    "os:image:build":        "bash -c 'docker build -t ace-os-builder -f later/os/build/Dockerfile .'"
+    "os:image:build":        "bash -c 'docker build -t ace-os-builder -f later/os/build/Dockerfile .'",
+    "os:image:build-img":   "bash scripts/installer/build-image.sh",
+    "os:image:flash":       "bash scripts/installer/flash.sh",
+    "app:home:dev":         "npm run dev --workspace=@ace/app-home",
+    "app:tasks:dev":        "npm run dev --workspace=@ace/app-tasks",
+    "app:focus:dev":        "npm run dev --workspace=@ace/app-focus",
+    "app:settings:dev":     "npm run dev --workspace=@ace/app-settings",
+    "setup:wizard:dev":     "bash -c 'npm run dev:backend & sleep 5 && ACE_BOOT_URL=http://localhost:4317 npm run dev:shell'"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5",

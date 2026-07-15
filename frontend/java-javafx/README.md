@@ -40,9 +40,11 @@ On macOS:
 brew install openjdk@17 maven
 ```
 
-The A.C.E backend (`@ace/backend`) must be reachable at
-`http://localhost:4318`. Move that constant in `HelloAce.java` if you
-ran the backend somewhere else.
+The A.C.E backend (`@ace/backend`) must be reachable. The default is
+`http://127.0.0.1:4318`; override with `ACE_BACKEND` (e.g.
+`ACE_BACKEND=http://192.0.2.10:4318`) or with `ACE_PORT` (just the
+port, defaults to `127.0.0.1`). The constants in `HelloAce.java` are
+now resolved at startup from those env vars first.
 
 ## Build & run
 
@@ -58,8 +60,14 @@ fat-jar, add `maven-shade-plugin` later — out of scope for the MVP.
 
 ## What the MVP shows
 
-A 640×360 window with three labels and a Refresh button. Initial
-fetch fires on `start()`, every subsequent fetch fires on click.
+A 640×360 window with:
+
+* `Backend:`     — `service (ok|down)` from `GET /api/health`, or
+  `Backend: offline` if the call has never succeeded
+* `User:`        — `name` from `GET /api/users/me`, or `User: offline`
+* `Last fetched:` timestamp updated only when **both** calls settle
+* `Refresh` button — re-fires both calls
+
 Errors from either endpoint land in a red line below the user label.
 
 ## Files
@@ -67,7 +75,7 @@ Errors from either endpoint land in a red line below the user label.
 ```
 frontend/java-javafx/
 ├── pom.xml
-└── src/main/java/com/ace/HelloAce.java   # ~120 lines
+└── src/main/java/com/ace/HelloAce.java   # ~170 lines
 ```
 
 ## Pitfalls / notes
@@ -81,3 +89,6 @@ frontend/java-javafx/
 * **`module-info.java` is optional** with the `javafx-maven-plugin`
   (it generates one under the hood). Add it explicitly only if you
   split the project into multi-module Maven builds.
+* **Timestamps in MVP** are intentionally local-clock only. If you
+  need timezone-aware values for kiosk use, switch to
+  `OffsetDateTime.now(ZoneId.systemDefault())`.

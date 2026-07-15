@@ -17,12 +17,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A.C.E OS · Java + JavaFX (JDK 17) front-end MVP.
  *
- * Open a 640×400 window containing two data rows + a Refresh button.
+ * Open a 640×400 window containing three data rows + a Refresh button:
+ *   * Backend:     GET /api/health
+ *   * User:        GET /api/users/me
+ *   * Last fetched: timestamp updated on every successful refresh
+ *
  * Both {@code /api/health} and {@code /api/users/me} are queried
  * through {@link HttpClient#sendAsync} so the JavaFX Application
  * Thread is never blocked; results are routed back via
@@ -30,6 +36,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Notable design choices:</p>
  * <ul>
+ *   <li>The backend base URL is read from the {@code ACE_BACKEND}
+ *       environment variable first, then {@code ACE_PORT}, then
+ *       {@code http://127.0.0.1:4318}. Mirrors the convention used
+ *       by {@code scripts/verify-shells.mjs} so the same shell launch
+ *       recipe works against the LAN box, the dev workstation, and a
+ *       stopped backend.</li>
+ *   <li>If both calls fail (backend offline) the rows fall back to
+ *       {@code Backend: offline} and {@code User: offline} so the user
+ *       gets a clear signal — not just a row of dashes.</li>
  *   <li>We do not share types with {@code @ace/shared} — the back-end
  *       contract is small enough to hand-map two fields (health.ok,
  *       user.name). Each new shell does the same.</li>
@@ -44,8 +59,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HelloAce extends Application {
 
-    private static final String BACKEND_BASE = "http://localhost:4318";
+    private static final String BACKEND_BASE = resolveBackendBase();
+    private static final DateTimeFormatter TIME_FMT =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final ObjectMapper JSON = new ObjectMapper();
+
+    private static String resolveBackendBase() {
+        String env = System.getenv("ACE_BACKEND");
+        if (env != null && !env.isBlank()) return stripTrailingSlash(env);
+        String port = System.getenv("ACE_PORT");
+        if (port != null && !port.isBlank()) return "http://127.0.0.1:" + port;
+        return "http://127.0.0.1:4318";
+    }
+
+    private static String stripTrailingSlash(String s) {
+        return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
+    }
 
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
@@ -53,9 +82,11 @@ public class HelloAce extends Application {
 
     private Label backendLbl;
     private Label userLbl;
+    private Label fetchedLbl;
     private Label errorLbl;
     private Button refreshBtn;
     private final AtomicInteger pending = new AtomicInteger(0);
+    private volatile boolean hasEverSucceeded = false;
 
     @Override
     public void start(Stage stage) {
@@ -69,6 +100,7 @@ public class HelloAce extends Application {
 
         backendLbl = styled("Backend: -", 14, "#e8eaf3", false);
         userLbl    = styled("User: -", 14, "#60a5fa", true);
+        fetchedLbl = styled("Last fetched: never", 12, "#94a3b8", false);
         errorLbl   = styled("", 12, "#fca5a5", false);
 
         refreshBtn = new Button("Refresh");
@@ -81,7 +113,8 @@ public class HelloAce extends Application {
         );
         refreshBtn.setOnAction(e -> refresh());
 
-        root.getChildren().addAll(title, subtitle, backendLbl, userLbl, errorLbl, refreshBtn);
+        root.getChildren().addAll(
+                title, subtitle, backendLbl, userLbl, fetchedLbl, errorLbl, refreshBtn);
 
         Scene scene = new Scene(root, 640, 360);
         scene.setFill(javafx.scene.paint.Color.web("#0b1020"));
@@ -125,8 +158,17 @@ public class HelloAce extends Application {
                         JsonNode body = JSON.readTree(resp.body());
                         if ("health".equals(kind)) applyHealth(body);
                         else                        applyUser(body);
+                        hasEverSucceeded = true;
                     } catch (Exception ex) {
                         errorLbl.setText("Error (" + kind + "): " + ex.getMessage());
+                        // If we never got a successful response in the
+                        // lifetime of the app, surface the "offline"
+                        // marker in the value row too — matches the
+                        // wording used by the other shells.
+                        if (!hasEverSucceeded) {
+                            if ("health".equals(kind)) backendLbl.setText("Backend: offline");
+                            if ("user".equals(kind))   userLbl.setText("User: offline");
+                        }
                     } finally {
                         doneOne();
                     }
@@ -146,6 +188,10 @@ public class HelloAce extends Application {
 
     private void doneOne() {
         if (pending.decrementAndGet() <= 0) {
+            // Only stamp the timestamp once both calls have settled —
+            // a half-finished refresh that updates only one row is
+            // misleading.
+            fetchedLbl.setText("Last fetched: " + LocalTime.now().format(TIME_FMT));
             refreshBtn.setDisable(false);
             refreshBtn.setText("Refresh");
         }

@@ -34,7 +34,10 @@ This is one of six port shells:
   ```bash
   sudo apt install -y libwayland-dev libxkbcommon-dev libssl-dev
   ```
-* The A.C.E backend must be running on `http://localhost:4318`.
+* The A.C.E backend must be reachable. The default is
+  `http://127.0.0.1:4318`; override with `ACE_BACKEND` (full URL) or
+  `ACE_PORT` (port only). The `resolve_backend_base()` helper at the
+  top of `src/main.rs` reads them in that order.
 
 [rustup]: https://rustup.rs/
 
@@ -48,10 +51,13 @@ cargo run --release                  # much smaller + faster
 
 ## What the MVP shows
 
-A single styled card with two rows:
+A single styled card with three rows:
 
-* `Backend:` populated from `GET /api/health`
-* `User:` populated from `GET /api/users/me`
+* `Backend:`     — `service (ok|down)` from `GET /api/health`, or
+  `Backend: offline` if the backend has never responded
+* `User:`        — `name` from `GET /api/users/me`, or `User: offline`
+* `Last fetched:` — wall-clock timestamp updated on every successful
+  refresh (UTC, modulo 24h)
 
 A `Refresh` button re-fires both calls. If the backend is offline, an
 `Error:` line appears below the card. The initial fetch is fired via
@@ -63,7 +69,7 @@ needing to click first.
 ```
 frontend/rust-iced/
 ├── Cargo.toml
-├── src/main.rs        # ~140 lines · state + update + view + fetch
+├── src/main.rs        # ~200 lines · state + update + view + fetch
 └── README.md
 ```
 
@@ -77,3 +83,7 @@ frontend/rust-iced/
 * Don't hold a `reqwest::Client` inside `App` — constructing it per
   fetch keeps the type trivially clone-safe and avoids accidental
   reuse across incompatible runtimes in tests.
+* `on_press_maybe` is the v0.13 idiom for a button that should be
+  inert while loading. The older `on_press` + `set_enabled` combo
+  still works but causes Iced to issue two state updates per click
+  and is what got us into trouble the first time around.

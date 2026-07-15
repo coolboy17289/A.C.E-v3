@@ -1,8 +1,9 @@
 //! A.C.E OS · Rust + Iced (v0.13) front-end.
 //!
 //! MVP scope: open a window, fetch `GET /api/health` and
-//! `GET /api/users/me` from the A.C.E backend, render both values in a
-//! row, allow a "Refresh" button to re-fetch.
+//! `GET /api/users/me` from the A.C.E backend, render the three
+//! values (Backend, User, Last fetched), and allow a Refresh button
+//! to re-fetch.
 //!
 //! Architecture is the canonical Iced 0.13 split:
 //!   - `Message`       — every event the runtime can dispatch
@@ -14,12 +15,34 @@
 //! spawned via `Task::perform`, and the resolved future is funneled
 //! back into `update()` as a `Message::Fetched` variant. This guarantees
 //! the UI is always derived from a state value (no torn renders).
+//!
+//! Backend base URL resolution (matches the other shells):
+//!   1. `ACE_BACKEND` env var (full URL, trailing slash stripped)
+//!   2. `ACE_PORT`    env var (port only -> http://127.0.0.1:<port>)
+//!   3. default:                          http://127.0.0.1:4318
+
+use std::env;
+use std::time::SystemTime;
 
 use iced::widget::{button, column, container, row, text};
-use iced::{Center, Element, Fill, Length, Task};
+use iced::{Element, Fill, Task};
 use serde::Deserialize;
 
-const BACKEND_BASE: &str = "http://localhost:4318";
+fn resolve_backend_base() -> String {
+    if let Ok(v) = env::var("ACE_BACKEND") {
+        let t = v.trim().trim_end_matches('/').to_string();
+        if !t.is_empty() {
+            return t;
+        }
+    }
+    if let Ok(p) = env::var("ACE_PORT") {
+        let t = p.trim();
+        if !t.is_empty() {
+            return format!("http://127.0.0.1:{t}");
+        }
+    }
+    "http://127.0.0.1:4318".to_string()
+}
 
 #[derive(Debug, Clone, Deserialize)]
 struct Health {
@@ -38,12 +61,32 @@ enum Message {
     Fetched(Result<(Health, UserMe), String>),
 }
 
-#[derive(Default)]
 struct App {
+    backend_base: String,
     health: Option<Health>,
     user: Option<UserMe>,
+    fetched_at: Option<SystemTime>,
     loading: bool,
     error: Option<String>,
+    /// True once at least one HTTP call has produced a parsed
+    /// payload. Used to gate the "Backend: offline" wording in the
+    /// initial-failure path so we don't show "offline" after a
+    /// successful first fetch that subsequently 500s.
+    ever_succeeded: bool,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            backend_base: resolve_backend_base(),
+            health: None,
+            user: None,
+            fetched_at: None,
+            loading: false,
+            error: None,
+            ever_succeeded: false,
+        }
+    }
 }
 
 impl App {
@@ -52,12 +95,17 @@ impl App {
             Message::Refresh => {
                 self.loading = true;
                 self.error = None;
-                Task::perform(fetch(), Message::Fetched)
+                Task::perform(
+                    fetch(self.backend_base.clone()),
+                    Message::Fetched,
+                )
             }
             Message::Fetched(Ok((h, u))) => {
                 self.health = Some(h);
                 self.user = Some(u);
+                self.fetched_at = Some(SystemTime::now());
                 self.loading = false;
+                self.ever_succeeded = true;
                 Task::none()
             }
             Message::Fetched(Err(e)) => {
@@ -69,23 +117,39 @@ impl App {
     }
 
     fn view(&self) -> Element<Message> {
-        let backend = self
-            .health
-            .as_ref()
-            .map(|h| {
-                if h.ok {
-                    format!("{} (ok)", h.service)
-                } else {
-                    format!("{} (down)", h.service)
-                }
-            })
-            .unwrap_or_else(|| "—".into());
+        // Backend label: ok|down when we have data, offline when we've
+        // never had a successful fetch, "—" before the first call.
+        let backend = if let Some(h) = self.health.as_ref() {
+            if h.ok {
+                format!("{} (ok)", h.service)
+            } else {
+                format!("{} (down)", h.service)
+            }
+        } else if self.error.is_some() && !self.ever_succeeded {
+            "offline".to_string()
+        } else {
+            "—".to_string()
+        };
 
         let username = self
             .user
             .as_ref()
             .map(|u| u.name.clone())
-            .unwrap_or_else(|| "—".into());
+            .unwrap_or_else(|| {
+                if self.error.is_some() && !self.ever_succeeded {
+                    "offline".to_string()
+                } else {
+                    "—".to_string()
+                }
+            });
+
+        let fetched = match self.fetched_at {
+            Some(t) => match t.duration_since(SystemTime::UNIX_EPOCH) {
+                Ok(d) => format_last_fetched(d.as_secs()),
+                Err(_) => "—".to_string(),
+            },
+            None => "never".to_string(),
+        };
 
         let err_line = self
             .error
@@ -96,9 +160,10 @@ impl App {
 
         let body = column![
             text("A.C.E OS").size(32),
-            text("Rust + Iced shell · v0.13").size(13),
+            text(format!("Rust + Iced shell · v0.13 · {}", self.backend_base)).size(11),
             row![kv("Backend", &backend)].spacing(8),
             row![kv("User", &username)].spacing(8),
+            row![kv("Last fetched", &fetched)].spacing(8),
             button(text(refresh_label).center())
                 .padding([10, 22])
                 .on_press_maybe(if self.loading { None } else { Some(Message::Refresh) }),
@@ -132,6 +197,18 @@ impl App {
     }
 }
 
+fn format_last_fetched(secs: u64) -> String {
+    // Local HH:MM:SS without dragging in chrono — the MVP only needs
+    // a wall-clock string. Seconds-since-epoch in UTC converted to
+    // HH:MM:SS by simple modular arithmetic. Kiosk users see a
+    // timestamp that is correct to within a few hours of their wall
+    // clock; precise timezone handling is a follow-up.
+    let h = (secs / 3600) % 24;
+    let m = (secs / 60) % 60;
+    let s = secs % 60;
+    format!("{:02}:{:02}:{:02} UTC", h, m, s)
+}
+
 fn kv(label: &str, value: &str) -> Element<'static, Message> {
     row![
         text(label.to_string()).size(11).color(iced::Color::from_rgb(0.58, 0.65, 0.78)),
@@ -141,14 +218,14 @@ fn kv(label: &str, value: &str) -> Element<'static, Message> {
     .into()
 }
 
-async fn fetch() -> Result<(Health, UserMe), String> {
+async fn fetch(base: String) -> Result<(Health, UserMe), String> {
     let client = reqwest::Client::builder()
         .user_agent("ace-rust-iced/0.1.0")
         .build()
         .map_err(|e| e.to_string())?;
 
     let h: Health = client
-        .get(format!("{BACKEND_BASE}/api/health"))
+        .get(format!("{base}/api/health"))
         .send()
         .await
         .map_err(|e| format!("GET /api/health: {e}"))?
@@ -157,7 +234,7 @@ async fn fetch() -> Result<(Health, UserMe), String> {
         .map_err(|e| format!("parse /api/health: {e}"))?;
 
     let u: UserMe = client
-        .get(format!("{BACKEND_BASE}/api/users/me"))
+        .get(format!("{base}/api/users/me"))
         .send()
         .await
         .map_err(|e| format!("GET /api/users/me: {e}"))?

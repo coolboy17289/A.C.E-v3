@@ -17,19 +17,27 @@ import type { AppManifest } from './types.js';
  */
 export const APP_REGISTRY: readonly AppManifest[] = [
   {
+    id: 'home',
+    name: 'Home',
+    description: 'Today overview with quick actions and an app launcher',
+    icon: '🏠',
+    accent: '#3da8ff',
+    order: 0,
+  },
+  {
+    id: 'tasks',
+    name: 'Tasks',
+    description: 'Touch-driven to-do list with categories and priorities',
+    icon: '✅',
+    accent: '#8a5cff',
+    order: 1,
+  },
+  {
     id: 'settings',
     name: 'Settings',
     description: 'Profile, theme, wallpaper, network, device & system',
     icon: '⚙️',
     accent: '#94a3b8',
-    order: 1,
-  },
-  {
-    id: 'ai',
-    name: 'AI Tutor',
-    description: 'Conversational study helper (Ollama + graceful fallback)',
-    icon: '🧠',
-    accent: '#22d3ee',
     order: 2,
   },
   {
@@ -41,6 +49,14 @@ export const APP_REGISTRY: readonly AppManifest[] = [
     order: 3,
   },
 ] as const;
+
+// AI Tutor intentionally dropped from the v2 --beta shipped shell.
+// The backend route at /api/ai/* stays alive for the legacy web-shell
+// and dev usage, but the touch-first launcher doesn't include the AI
+// tile — Ollama + Vision adds boot time + battery cost without a
+// guaranteed classroom Wi-Fi connection. The shell's "Coming soon"
+// stub swallows any AppId outside APP_REGISTRY should the registry
+// letter accidentally re-include 'ai'.
 
 export function getApp(id: string): AppManifest | undefined {
   return APP_REGISTRY.find((a) => a.id === id);

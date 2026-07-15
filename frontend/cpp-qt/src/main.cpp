@@ -10,8 +10,15 @@
 // `finished` lambdas touch QLabel/QPushButton directly because Qt
 // routes them back onto the UI thread internally (via queued
 // connections, since `connect` defaults to AutoConnection).
+//
+// Backend base resolution order (matches the other shells):
+//   1. ACE_BACKEND env var, e.g. http://192.0.2.10:4318
+//   2. ACE_PORT    env var, e.g. 4318  -> http://127.0.0.1:4318
+//   3. default:                     -> http://127.0.0.1:4318
 
 #include <QApplication>
+#include <QDateTime>
+#include <QFontDatabase>
 #include <QLabel>
 #include <QMainWindow>
 #include <QNetworkAccessManager>
@@ -25,8 +32,24 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <cstdlib>
+#include <string>
+
 namespace {
-constexpr const char *kBackendBase = "http://localhost:4318";
+
+QString resolveBackendBase() {
+    const QByteArray envBackend = qgetenv("ACE_BACKEND");
+    if (!envBackend.isEmpty()) {
+        QString s = QString::fromLocal8Bit(envBackend);
+        while (s.endsWith('/')) s.chop(1);
+        return s;
+    }
+    const QByteArray envPort = qgetenv("ACE_PORT");
+    if (!envPort.isEmpty()) {
+        return QStringLiteral("http://127.0.0.1:") + QString::fromLocal8Bit(envPort);
+    }
+    return QStringLiteral("http://127.0.0.1:4318");
+}
 
 class AceWindow : public QMainWindow {
     Q_OBJECT
@@ -57,6 +80,10 @@ public:
         m_user = new QLabel("User: -");
         m_user->setStyleSheet("font-size: 14px; color: #60a5fa; font-weight: 600;");
         layout->addWidget(m_user);
+
+        m_fetched = new QLabel("Last fetched: never");
+        m_fetched->setStyleSheet("font-size: 12px; color: #94a3b8;");
+        layout->addWidget(m_fetched);
 
         m_error = new QLabel("");
         m_error->setStyleSheet("color: #fca5a5; font-size: 12px;");
@@ -94,11 +121,11 @@ private slots:
         m_refresh->setText("Refreshing...");
         m_error->setText("");
 
-        QNetworkRequest hReq(QUrl(QString::fromLatin1(kBackendBase) + "/api/health"));
+        QNetworkRequest hReq(QUrl(m_backendBase + "/api/health"));
         QNetworkReply *h = m_nam.get(hReq);
         connect(h, &QNetworkReply::finished, this, [this, h]() { onHealth(h); });
 
-        QNetworkRequest uReq(QUrl(QString::fromLatin1(kBackendBase) + "/api/users/me"));
+        QNetworkRequest uReq(QUrl(m_backendBase + "/api/users/me"));
         QNetworkReply *u = m_nam.get(uReq);
         connect(u, &QNetworkReply::finished, this, [this, u]() { onUser(u); });
     }
@@ -114,36 +141,68 @@ private:
 
     void consume(QNetworkReply *r, const char *kind) {
         const auto body = r->readAll();
+        const QNetworkReply::NetworkError netErr = r->error();
+        const int httpStatus =
+            (netErr == QNetworkReply::NoError) ? r->attribute(
+                QNetworkRequest::HttpStatusCodeAttribute).toInt() : 0;
         r->deleteLater();
 
-        QJsonParseError pe;
-        const auto doc = QJsonDocument::fromJson(body, &pe);
-        if (pe.error != QJsonParseError::NoError || !doc.isObject()) {
-            m_error->setText(QStringLiteral("Error parsing %1: %2").arg(kind, pe.errorString()));
+        bool ok = false;
+        // Network-level failure (DNS, connect refused, timeout) takes
+        // priority over a parse error: the user wants to know the
+        // backend is unreachable, not that "an empty body isn't JSON".
+        if (netErr != QNetworkReply::NoError) {
+            m_error->setText(QStringLiteral("Error (%1): %2")
+                .arg(kind, r->errorString()));
+        } else if (httpStatus >= 400) {
+            m_error->setText(QStringLiteral("HTTP %1 from %2")
+                .arg(httpStatus).arg(kind));
         } else {
-            const auto obj = doc.object();
-            if (qstrcmp(kind, "backend") == 0) {
-                const auto svc = obj.value("service").toString("ace-backend");
-                const bool ok = obj.value("ok").toBool(false);
-                m_backend->setText(QStringLiteral("Backend: %1 (%2)").arg(svc, ok ? "ok" : "down"));
-            } else if (qstrcmp(kind, "user") == 0) {
-                const auto name = obj.value("name").toString("(unnamed)");
-                m_user->setText(QStringLiteral("User: %1").arg(name));
+            QJsonParseError pe;
+            const auto doc = QJsonDocument::fromJson(body, &pe);
+            if (pe.error == QJsonParseError::NoError && doc.isObject()) {
+                const auto obj = doc.object();
+                if (qstrcmp(kind, "backend") == 0) {
+                    const auto svc = obj.value("service").toString("ace-backend");
+                    const bool healthy = obj.value("ok").toBool(false);
+                    m_backend->setText(QStringLiteral("Backend: %1 (%2)").arg(svc, healthy ? "ok" : "down"));
+                    ok = true;
+                } else if (qstrcmp(kind, "user") == 0) {
+                    const auto name = obj.value("name").toString("(unnamed)");
+                    m_user->setText(QStringLiteral("User: %1").arg(name));
+                    ok = true;
+                }
+            } else {
+                m_error->setText(QStringLiteral("Error parsing %1: %2").arg(kind, pe.errorString()));
             }
         }
 
+        if (ok) m_hasEverSucceeded = true;
+        else if (!m_hasEverSucceeded) {
+            // Backend not yet reachable in the lifetime of the app —
+            // mirror the wording used by the other shells.
+            if (qstrcmp(kind, "backend") == 0) m_backend->setText("Backend: offline");
+            if (qstrcmp(kind, "user") == 0)    m_user->setText("User: offline");
+        }
+
         if (--m_pending <= 0) {
+            // Only stamp the timestamp once both calls have settled.
+            m_fetched->setText(QStringLiteral("Last fetched: %1")
+                .arg(QDateTime::currentDateTime().toString("HH:mm:ss")));
             m_refresh->setEnabled(true);
             m_refresh->setText("Refresh");
         }
     }
 
+    const QString m_backendBase = resolveBackendBase();
     QNetworkAccessManager m_nam;
     QLabel *m_backend{nullptr};
     QLabel *m_user{nullptr};
+    QLabel *m_fetched{nullptr};
     QLabel *m_error{nullptr};
     QPushButton *m_refresh{nullptr};
     int m_pending{0};
+    bool m_hasEverSucceeded{false};
 };
 }  // namespace
 

@@ -36,9 +36,10 @@ Or via the [official Qt installer].
 
 On macOS / Windows use the [Qt online installer].
 
-The A.C.E backend (`@ace/backend`) must be running on
-`http://localhost:4318`. If you move it, edit the `kBackendBase`
-constant in `src/main.cpp`.
+The A.C.E backend (`@ace/backend`) must be reachable. The default is
+`http://127.0.0.1:4318`. Override with `ACE_BACKEND` (e.g.
+`ACE_BACKEND=http://192.0.2.10:4318`) or `ACE_PORT` (just the port).
+The resolution helper lives at the top of `src/main.cpp`.
 
 [official Qt installer]: https://www.qt.io/download-qt-installer
 [Qt online installer]: https://www.qt.io/download-qt-installer
@@ -61,8 +62,10 @@ Cross-compile to the Pi 5 with [`qt-cmake`] and the matching
 
 A single 640 × 360 window with:
 
-* `Backend:` — last value of `GET /api/health`'s `service` + `ok`
-* `User:`    — last value of `GET /api/users/me`'s `name`
+* `Backend:` — `service (ok|down)` from `GET /api/health`, or
+  `Backend: offline` if the backend has never responded
+* `User:`    — `name` from `GET /api/users/me`, or `User: offline`
+* `Last fetched:` — timestamp updated only after **both** calls settle
 * `Refresh`  button to re-fire both calls
 
 If the network fails, the error message lands in a red label below the
@@ -73,7 +76,7 @@ values instead of crashing.
 ```
 frontend/cpp-qt/
 ├── CMakeLists.txt
-├── src/main.cpp          # ~140 lines · AceWindow + slots
+├── src/main.cpp          # ~190 lines · AceWindow + slots
 └── README.md
 ```
 
@@ -87,3 +90,6 @@ frontend/cpp-qt/
 * `find_package(Qt6 6.5 REQUIRED ...)` will fail loudly if your distro
   only ships Qt 5. Don't try to downgrade silently — the API broke in
   Qt 6.
+* `QDateTime` here uses `HH:mm:ss` (local clock). For multi-zone kiosk
+  deployments, switch to a `QTimeZone` argument and an explicit
+  `QDateTime::currentDateTime(tz)`.

@@ -16,6 +16,13 @@
  * localStorage persistence, multiple apps, AI tutor wiring. Those all
  * live in `@ace/desktop-shell`; this page exists to validate that a
  * Next.js deployment is viable as an alternative target.
+ *
+ * The backend base URL is read from `NEXT_PUBLIC_ACE_BACKEND` at build
+ * time; if unset it falls back to the rewrite target in
+ * `next.config.mjs`, which in turn defaults to `http://127.0.0.1:4318`.
+ * The same-shell `<Row>` labels (`Backend:`, `User:`, `Last fetched:`)
+ * are kept stable so the smoke test in `scripts/verify-shells.mjs`
+ * still finds the expected strings.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -41,6 +48,9 @@ interface Snapshot {
   user: User | null;
 }
 
+const BACKEND_BASE =
+  process.env.NEXT_PUBLIC_ACE_BACKEND?.replace(/\/+$/, '') ?? '';
+
 export default function Home() {
   const [data, setData] = useState<Snapshot>({ health: null, user: null });
   const [loading, setLoading] = useState(false);
@@ -51,9 +61,15 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
+      // `BACKEND_BASE` is empty by default — that falls through to the
+      // /api/* rewrite in next.config.mjs. When a deploy needs to point
+      // at a different host (LAN box, staging), set
+      // NEXT_PUBLIC_ACE_BACKEND=http://192.0.2.10:4318 and the rewrite
+      // is bypassed entirely.
+      const base = BACKEND_BASE;
       const [hRes, uRes] = await Promise.all([
-        fetch('/api/health', { cache: 'no-store' }),
-        fetch('/api/users/me', { cache: 'no-store' }),
+        fetch(`${base}/api/health`, { cache: 'no-store' }),
+        fetch(`${base}/api/users/me`, { cache: 'no-store' }),
       ]);
       if (!hRes.ok || !uRes.ok) {
         throw new Error(`Backend ${hRes.status}/${uRes.status}`);
@@ -63,7 +79,13 @@ export default function Home() {
       setData({ health, user });
       setLastFetched(new Date());
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
+      // Distinguish "backend not reachable" from "backend reachable but
+      // the call failed" — shells that consume this page want the
+      // "Backend: offline" wording in the former case.
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(/fetch failed|networkerror|failed to fetch/i.test(msg)
+        ? 'offline'
+        : msg);
     } finally {
       setLoading(false);
     }
@@ -72,6 +94,20 @@ export default function Home() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Single source of truth for the `Backend:` row. When the user
+  // explicitly sets `error='offline'` we render the same wording the
+  // native shells use.
+  const backendValue = data.health
+    ? `${data.health.service} (${data.health.ok ? 'ok' : 'down'})`
+    : error === 'offline'
+      ? 'offline'
+      : loading
+        ? 'checking…'
+        : '—';
+
+  const userValue = data.user?.name
+    ?? (error === 'offline' ? 'offline' : loading ? '…' : '—');
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '2rem 1.5rem' }}>
@@ -105,17 +141,10 @@ export default function Home() {
           marginTop: 24,
         }}
       >
-        <Row
-          label="Backend"
-          value={
-            data.health
-              ? `${data.health.service} (${data.health.ok ? 'ok' : 'down'})`
-              : loading ? 'checking…' : '—'
-          }
-        />
+        <Row label="Backend" value={backendValue} />
         <Row
           label="User"
-          value={data.user?.name ?? loading ? '…' : '—'}
+          value={userValue}
           accent={data.user?.preferences.accentColor}
         />
         <Row
@@ -126,9 +155,14 @@ export default function Home() {
               : 'never'
           }
         />
-        {error && (
+        {error && error !== 'offline' && (
           <p style={{ color: '#fca5a5', marginTop: 12 }}>
             Error: {error}
+          </p>
+        )}
+        {error === 'offline' && (
+          <p style={{ color: '#fca5a5', marginTop: 12 }}>
+            Backend: offline — start the API on :4318 and click Refresh.
           </p>
         )}
 
@@ -163,7 +197,8 @@ export default function Home() {
       >
         <code>/api/*</code> is rewritten by{' '}
         <code>next.config.mjs</code> to{' '}
-        <code>http://localhost:4318/api/*</code> — the npm{' '}
+        <code>http://127.0.0.1:4318/api/*</code> (override with{' '}
+        <code>NEXT_PUBLIC_ACE_BACKEND</code> at build time) — the npm{' '}
         <code>@ace/backend</code> service must be running for this page
         to populate.
       </footer>

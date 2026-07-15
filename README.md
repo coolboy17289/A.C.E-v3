@@ -1,6 +1,64 @@
 # A.C.E OS - Academic Companion Engine OS
 
-A lightweight Linux-based operating system for Raspberry Pi, designed specifically for students. A.C.E OS combines a minimal Linux base with a custom React + TypeScript desktop environment to deliver a complete educational computing experience.
+A lightweight Linux-based operating system for Raspberry Pi, designed
+specifically for students. A.C.E OS combines a minimal Linux base with
+a custom React + TypeScript desktop environment to deliver a complete
+educational computing experience.
+
+The narrative of the project lives in this file. The release-by-release
+summary is in [CHANGELOG.md](CHANGELOG.md), and the raw dev log lives
+in [DEVLOG.md](DEVLOG.md).
+
+## Table of contents
+
+- [Getting started](#getting-started)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Native frontend ports](#native-frontend-ports)
+- [Build & test](#build--test)
+- [Applications](#applications)
+- [Hardware services](#hardware-services)
+- [Raspberry Pi deployment](#raspberry-pi-deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Getting started
+
+### Prerequisites
+
+- Node.js >= 18
+- npm >= 9
+- For the native port shells: the toolchain for that stack
+  (see each port's README in [Native frontend ports](#native-frontend-ports)).
+- For C daemon work: a C11 compiler (default `cc`), `make`, and `ar`.
+- For Pi deployment: Docker (image build) and a Unix-like host for
+  `dd` (image flash).
+
+### Install
+
+```bash
+npm install
+```
+
+### Run in development
+
+```bash
+# Terminal 1 — backend (Node.js + SQLite, default port 4318)
+npm run dev:backend
+
+# Terminal 2 — desktop shell (Vite + React)
+npm run dev:shell
+```
+
+The desktop shell opens at `http://localhost:5173` in Chromium kiosk
+mode. Override the backend port with `ACE_PORT=…` on both terminals
+if 4318 is taken.
+
+### Build for production
+
+```bash
+npm run build
+```
 
 ## Architecture
 
@@ -22,7 +80,7 @@ A.C.E OS is built as a tiered system:
 └─────────────────────────────────────────────────┘
 ```
 
-## Project Structure
+## Project structure
 
 ```
 ace-os/
@@ -37,67 +95,77 @@ ace-os/
 │   │   ├── ai/          AI learning assistant
 │   │   ├── statistics/  Learning analytics
 │   │   └── settings/    System configuration
+│   ├── design-system/   @ace/design-system
 │   └── shared/          Shared types & utilities
 ├── backend/         Node.js + TypeScript API
 │   ├── api/             REST endpoints
 │   ├── database/        SQLite layer
 │   └── services/        Business logic
+├── os/              C / Linux-side daemons
+│   ├── daemon/          Hardware, system, focus daemons
+│   └── lib/             Reusable C libraries (focus state machine)
 ├── system/          Linux system configuration
 │   ├── linux-config/    OS setup scripts
 │   ├── services/        Systemd unit files
-│   └── boot/            Boot configuration
-└── hardware/        Hardware service code
-    ├── camera/          Camera interface
-    ├── sensors/         Sensor interfaces
-    └── gpio/            GPIO control
+│   └── boot/            Boot splash + Plymouth theme
+├── hardware/        Hardware service code
+│   ├── camera/          Camera interface
+│   ├── sensors/         Sensor interfaces
+│   └── gpio/            GPIO control
+├── raspberry-pi/    Pi-specific helpers and tests
+└── scripts/         Cross-cutting developer scripts
+    ├── dev-all.sh          # tmux dashboard of every shell
+    ├── verify-shells.mjs   # backend smoke test
+    ├── verify-shells-gated.mjs  # smoke test, gated on backend port
+    └── install-hooks.sh    # idempotent pre-commit installer
 ```
 
-## Quick Start (Development)
+## Native frontend ports
 
-### Prerequisites
-- Node.js >= 18
-- npm >= 9
-
-### Install
-```bash
-npm install
-```
-
-### Run Development Mode
-```bash
-# Start backend (terminal 1)
-npm run dev:backend
-
-# Start desktop shell (terminal 2)
-npm run dev:shell
-```
-
-The desktop shell will open at `http://localhost:5173` in Chromium kiosk mode.
-
-### Build for Production
-```bash
-npm run build
-```
-
-## Port shells (alternative front-ends)
-
-A.C.E OS exposes a JSON API from `backend/` on port `4318`. Anything
-that can speak `GET /api/health` and `GET /api/users/me` can be a
-front-end. Beyond the React/Vite SPA that ships by default
+A.C.E OS exposes a JSON API from `backend/` on port `4318`
+(overridable via `ACE_PORT`). Anything that can speak
+`GET /api/health` and `GET /api/users/me` can be a front-end.
+Beyond the React/Vite SPA that ships by default
 (`frontend/desktop-shell/`), six alternative front-ends live in this
 repo:
 
-| Stack      | Path                       | Native on Pi? | Boot speed vs Chromium kiosk |
-|------------|----------------------------|---------------|------------------------------|
-| Next.js    | `frontend/nextjs/`         | no (still Chromium) | faster FCP, otherwise equivalent |
-| Rust+Iced  | `frontend/rust-iced/`      | yes (`iced 0.13` over Wayland/X11) | **~80ms** cold start |
-| Rust+Slint | `frontend/rust-slint/`     | yes (Slint renderer) | **~60ms** cold start, smallest binary |
-| C++ / Qt 6 | `frontend/cpp-qt/`         | yes (Qt Widgets) | **~150ms** cold start |
-| Java + JavaFX | `frontend/java-javafx/` | yes (JDK 17 + OpenJFX) | **~600ms** cold start (JVM warmup) |
-| C + GTK4   | `frontend/c-gtk4/`         | yes (Wayland native) | **~50ms** cold start |
+| Stack         | Path                          | Native on Pi?                  | Boot speed vs Chromium kiosk   |
+|---------------|-------------------------------|--------------------------------|--------------------------------|
+| Next.js       | `frontend/nextjs/`            | no (still Chromium)            | faster FCP, otherwise equivalent |
+| Rust + Iced   | `frontend/rust-iced/`         | yes (`iced 0.13` over Wayland/X11) | **~80 ms** cold start          |
+| Rust + Slint  | `frontend/rust-slint/`        | yes (Slint renderer)           | **~60 ms** cold start, smallest binary |
+| C++ / Qt 6    | `frontend/cpp-qt/`            | yes (Qt Widgets)               | **~150 ms** cold start         |
+| Java + JavaFX | `frontend/java-javafx/`       | yes (JDK 17 + OpenJFX)         | **~600 ms** cold start (JVM warmup) |
+| C + GTK4      | `frontend/c-gtk4/`            | yes (Wayland native)           | **~50 ms** cold start          |
 
-Each port has its own `README.md` with prerequisites + a build/run
-recipe. To get all six running side-by-side against the same backend:
+Per-port setup, prerequisites, and build/run recipes live in each
+port's own `README.md`:
+
+- [`frontend/nextjs/README.md`](frontend/nextjs/README.md)
+- [`frontend/rust-iced/README.md`](frontend/rust-iced/README.md)
+- [`frontend/rust-slint/README.md`](frontend/rust-slint/README.md)
+- [`frontend/cpp-qt/README.md`](frontend/cpp-qt/README.md)
+- [`frontend/java-javafx/README.md`](frontend/java-javafx/README.md)
+- [`frontend/c-gtk4/README.md`](frontend/c-gtk4/README.md)
+
+> **About the boot-speed numbers**: they are estimates measured on a
+> Raspberry Pi 4B (4 GB) with a warm kernel, Wayfire already running,
+> and a `--release` build for the native shells. Cold-boot times
+> (Pi power-on → first window paint) are dominated by the kernel and
+> Plymouth splash, not the shell, so the deltas between native
+> shells on a fully warm system are the meaningful comparison.
+> Re-run `time <shell> --no-fetch` on your hardware to get fresh
+> numbers.
+
+### MVP scope (intentionally narrow)
+
+Every port's MVP is a single window with three label rows + a Refresh
+button: `Backend:` (`/api/health`), `User:` (`/api/users/me`), plus a
+timestamp. None of them reimplements the React dashboard; they exist
+to validate end-to-end plumbing (HTTP → parsing → render → click).
+To port full features, follow the per-stack READMEs as the entry point.
+
+### Launching all shells side-by-side
 
 ```bash
 npm run dev:backend            # terminal 1
@@ -118,17 +186,100 @@ npm run shell:c-gtk4:build && npm run shell:c-gtk4:run
 that hits the two shared endpoints and asserts the JSON shape the
 shells rely on — useful in CI before kicking off cross-compilation.
 
-### MVP scope (intentionally narrow)
+## Build & test
 
-Every port's MVP is a single window with three label rows + a Refresh
-button: `Backend:` (`/api/health`), `User:` (`/api/users/me`), plus a
-timestamp. None of them reimplements the React dashboard; they exist
-to validate end-to-end plumbing (HTTP → parsing → render → click). To
-port full features, follow the per-stack READMEs as the entry point.
+### Node.js / TypeScript
 
-## Raspberry Pi Deployment
+```bash
+npm run typecheck   # tsc --noEmit across every workspace
+npm run test        # vitest run across every workspace
+npm run verify      # typecheck + test + (gated) shells:verify
+npm run verify:full # typecheck + test + shells:verify (always)
+```
 
-See [`system/linux-config/INSTALL.md`](system/linux-config/INSTALL.md) for full deployment instructions to Raspberry Pi hardware.
+`npm run verify` is the single CI entrypoint. The shells smoke test
+is gated on the backend port: if nothing is listening on
+`ACE_PORT` (default `4318`) the check is skipped with a warning so
+the typecheck + unit-test pipeline still passes. To force the smoke
+test even with no backend running, use `npm run verify:full`.
+
+### C daemons
+
+The top-level `Makefile` wraps the per-module build trees without
+re-implementing them. Targets:
+
+```bash
+make            # default: build all C artifacts (daemon + focus)
+make daemon     # build os/daemon/* libraries + test drivers
+make focus      # build os/lib/focus (state machine library)
+make test       # build + run every C-side test driver
+make verify     # alias for test
+make clean      # remove artifacts in every sub-tree
+```
+
+Individual test commands per module:
+
+```bash
+make -C os/daemon/common test   # HTTP + daemon env-helper round-trip
+make -C os/lib/focus     test   # focus state-machine tests
+```
+
+### C cross-compile + image build
+
+```bash
+# Inside the Docker image (Stage 0 cross-compiles the kernel)
+npm run os:image:build
+
+# Standalone kernel recipe (debug, requires rpi-6.6.y toolchain)
+npm run os:kernel:check
+npm run os:kernel:build
+```
+
+### Flashing to a Pi
+
+```bash
+# Build the .img (output: ace-os-v2-beta.img + .sha256 sidecar)
+ACE_BASE_IMAGE=/path/to/raspios-lite-arm64.img npm run os:image:build-img
+
+# Flash to an SD card (verifies SHA-256, 10 s safety countdown, dd bs=4M)
+sudo npm run os:image:flash -- /dev/sdX ace-os-v2-beta.img
+```
+
+See [`scripts/installer/README.md`](scripts/installer/README.md) for
+the full pipeline, recovery procedure, and why the installer does not
+resize partitions.
+
+### Pi hardware sanity checks
+
+```bash
+npm run raspi:info     # print Pi model + SoC + firmware info
+npm run raspi:blink    # toggle GPIO 17 to confirm libgpiod is wired
+```
+
+## Applications
+
+1. **Home** — Dashboard with today's overview & quick actions
+2. **Planner** — Calendar, assignments, exams, timetable
+3. **Tasks** — Task management with priorities & categories
+4. **Subjects** — Subject list, notes, revision tracking
+5. **Focus** — Pomodoro timer & study sessions
+6. **AI** — AI learning assistant (Ollama/llama.cpp)
+7. **Statistics** — Learning analytics & trends
+8. **Settings** — System, theme, hardware, network
+
+## Hardware services
+
+- **ace-core**: Main OS service & IPC
+- **ace-hardware**: Camera, GPIO, sensors, LEDs
+- **ace-ai**: Local AI processing
+- **ace-sync**: Data backup & syncing
+
+## Raspberry Pi deployment
+
+See [`system/linux-config/INSTALL.md`](system/linux-config/INSTALL.md)
+for full deployment instructions to Raspberry Pi hardware, and
+[`raspberry-pi/README.md`](raspberry-pi/README.md) for the hardware
+layer overview (camera, GPIO, sensors, system health).
 
 ### Boot splash + cross-compiled kernel
 
@@ -158,89 +309,47 @@ npm run os:kernel:build      # run build-kernel.sh standalone (debug)
 npm run os:image:build       # full Docker image (kernel + rootfs + Plymouth)
 ```
 
-Why Plymouth over `config.txt` splash: the Pi's KMS driver (vc4-kms-v3d)
-replaces the framebuffer firmware splash half-way through boot, so any
-`config.txt` "splash image" flickers. Plymouth owns the DRM device for
-the entire `initramfs → KMS → X/Wayland → desktop` window.
+Why Plymouth over `config.txt` splash: the Pi's KMS driver
+(vc4-kms-v3d) replaces the framebuffer firmware splash half-way
+through boot, so any `config.txt` "splash image" flickers. Plymouth
+owns the DRM device for the entire
+`initramfs → KMS → X/Wayland → desktop` window.
 
-## Applications
+## Contributing
 
-1. **Home** — Dashboard with today's overview & quick actions
-2. **Planner** — Calendar, assignments, exams, timetable
-3. **Tasks** — Task management with priorities & categories
-4. **Subjects** — Subject list, notes, revision tracking
-5. **Focus** — Pomodoro timer & study sessions
-6. **AI** — AI learning assistant (Ollama/llama.cpp)
-7. **Statistics** — Learning analytics & trends
-8. **Settings** — System, theme, hardware, network
+1. Fork and create a feature branch.
+2. Install the pre-commit hook so typecheck and unit tests run on
+   every commit:
 
-## Hardware Services
+   ```bash
+   ./scripts/install-hooks.sh
+   ```
 
-- **ace-core**: Main OS service & IPC
-- **ace-hardware**: Camera, GPIO, sensors, LEDs
-- **ace-ai**: Local AI processing
-- **ace-sync**: Data backup & syncing
+   The script is idempotent — rerun it to refresh the hook from the
+   current `scripts/install-hooks.sh`.
+
+3. Make your change. Keep commits focused; reference the relevant
+   app or daemon directory in the subject line.
+4. Run the full verify pipeline locally before opening a PR:
+
+   ```bash
+   npm run verify
+   ```
+
+   If you touched the C side, also run:
+
+   ```bash
+   make test
+   ```
+
+5. Open a pull request. Include:
+   - A short description of the change.
+   - Any new or updated tests.
+   - A note in [CHANGELOG.md](CHANGELOG.md) under "Unreleased"
+     (the v2.0.0 section is filled in as v2 --beta progresses).
+   - Screenshots for UI work, especially for `@ace/design-system`
+     and the touch-first apps.
 
 ## License
 
 MIT
-
-## dev log |
-
-v1 was pushed at  (15 July 2026 at 15:42)
-   initail com is still v1 with json files beng the main change 
-Update: v1.01 -- beta was a debug due to an old code file 
-Update: v1.01.1 --beta adds files for the raspberry py to control gpio camara sensors ect..
-  Note: not being pushed due to bugs
-  Note: more erros found in /home/Lihan/A.C.E/frontend/apps/ai/tsconfig.json
-  Note: error is [{
-	"resource": "/home/Lihan/A.C.E/frontend/apps/ai/tsconfig.json",
-	"owner": "typescript",
-	"severity": 8,
-	"message": "Option 'baseUrl' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error.\n  Visit https://aka.ms/ts6 for migration information.",
-	"source": "ts",
-	"startLineNumber": 3,
-	"startColumn": 3,
-	"endLineNumber": 3,
-	"endColumn": 20,
-	"origin": "extHost1"
-}]
-Note: cant find main error Timestamp Jul15 at 1618 hr 
-Note: sorry for using military time as im a cadet and im use to that [nzcf website fpr refrece to cadets](https://cadetforces.org.nz/)
-
-Note: Error found in the ai app folder api error and due to taht no important till later on timestamp 1622 hr
-Update: adding settings app and finish codeing gui ran by npm run dev time stamp 1623hr 
-Note: 2nd error but not for this project idk how that code got into my codebase timestamp jul 15 1629hr
-Update:adding backround folder ato add more background timestamp jul 15 1717 hr
-Update: 4 errors ![screenshot](image.png) timestame jul15 17:23
-Note using claude for debugging 
-Update pushing v1.2.0 --beta with kind of working gui
-   Note: this will be the 4th push for this project 
-   Note; 5 errors 
-Update: timestamp jul 15 1733 hr claude code found the erros but just makeing them worst somehow 
-   Note this is what claude code said # Developer Notes #2: Major Errors and Debugging Challenges
-
-During the latest stage of development, I encountered two major errors that have become significant blockers. After spending time investigating the issues, testing possible solutions, and reviewing the code, I have not yet been able to determine the exact cause.
-
-These errors have slowed development progress, but they have also provided useful opportunities to learn more about the system and identify areas that may need improvement. Debugging complex problems is a normal part of software development, even if it sometimes feels like the code has decided to fight back for no logical reason.
-
-At this stage, I may use additional debugging tools, including Claude Code, to help analyse the issues and speed up the troubleshooting process. The goal is not just to find a quick fix, but to understand the underlying cause and make sure the solution is reliable.
-
-Further updates will be added once more information is discovered, including the root cause of the errors, the debugging process, and the final fixes implemented.
-Update:
-       New push no version update comminted claude code fixis
-                                                             Timestamp: jul 1510 hrs  
-Update: version 1.2.1 --beta is now being pushed timespame jul 15 1829hr                                                              
-Update v1.2.1--beta is a broken vertion not to be used 
-update v1.2.2 -- beta is a fix hopefull that is now being pushed 
-  Note: ai tutor is broken 
-Update: backend fixxes V1.2.3 --beta   is pushed
-Note erros are fin and to be ignored at this stage
-     Next step is to fix thems and add mreo apps fix light and dark mode and try and make the first iso 
-update Next step is to fix thems and add mreo apps fix light and dark mode and try and make the first iso not done yet      
-update v1.2.4 --beta is the neweset version 
-      Next step is to fix thems and add mreo apps fix light and dark mode and try and make the first iso 
-Update starting version2 --beta note fully recodeing codebase for better performance and #typscritsucks   
-update started recodeing timestamp jul 15 19 50   
-    note next fex pushes will still stay on version 2 till the main gui works 
-    
