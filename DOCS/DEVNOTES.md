@@ -121,3 +121,33 @@ NOW BACK TO THE DEVNOTES
 adding some type script
 intergrating my project with @Tacocats project 
 [sidera nacio](sideranacio.org)
+note
+Bootloader:
+Assembly + C
+
+Kernel:
+C + Rust + Zig
+
+Drivers:
+C + Rust
+
+GUI:
+C++ + Rust + Vala
+
+Graphics:
+C++ + GLSL + Vulkan
+
+Apps:
+C++ + Rust
+
+AI:
+Python + Mojo + Prolog
+
+Plugins:
+Lua + Lisp
+
+Hardware:
+Verilog + C
+
+Build:
+CMake + Nix
