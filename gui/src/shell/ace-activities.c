@@ -57,7 +57,7 @@ static void ace_activities_class_init(AceActivitiesClass *klass) {
 
 static void ace_activities_init(AceActivities *self) {
     gtk_widget_set_layout_manager(GTK_WIDGET(self),
-        gtkBoxLayout_new(GTK_ORIENTATION_VERTICAL, 16));
+        gtk_box_layout_new(GTK_ORIENTATION_VERTICAL));
     gtk_widget_add_css_class(GTK_WIDGET(self), "ace-activities");
 
     /* Search bar */
@@ -101,7 +101,7 @@ static void ace_activities_init(AceActivities *self) {
         gtk_widget_add_css_class(btn, "ace-app-btn");
 
         GtkWidget *icon_label = gtk_label_new(app->icon);
-        gtk_widget_set_markup(icon_label,
+        gtk_label_set_markup(GTK_LABEL(icon_label),
             g_markup_printf_escaped("<span size='xx-large'>%s</span>", app->icon));
         gtk_button_set_child(GTK_BUTTON(btn), icon_label);
 

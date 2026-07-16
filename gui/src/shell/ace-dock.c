@@ -43,7 +43,7 @@ static void ace_dock_class_init(AceDockClass *klass) {
 static void ace_dock_init(AceDock *self) {
     /* Set layout */
     gtk_widget_set_layout_manager(GTK_WIDGET(self),
-        gtkBoxLayout_new(GTK_ORIENTATION_HORIZONTAL, 0));
+        gtk_box_layout_new(GTK_ORIENTATION_HORIZONTAL));
     gtk_widget_set_halign(GTK_WIDGET(self), GTK_ALIGN_CENTER);
     gtk_widget_set_valign(GTK_WIDGET(self), GTK_ALIGN_END);
     gtk_widget_add_css_class(GTK_WIDGET(self), "ace-dock");
@@ -73,7 +73,7 @@ static void ace_dock_init(AceDock *self) {
 
         /* Icon label */
         GtkWidget *icon_label = gtk_label_new(app->icon);
-        gtk_widget_set_markup(icon_label,
+        gtk_label_set_markup(GTK_LABEL(icon_label),
             g_markup_printf_escaped("<span size='x-large'>%s</span>", app->icon));
         gtk_button_set_child(GTK_BUTTON(btn), icon_label);
 

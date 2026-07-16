@@ -6,14 +6,9 @@
 #include "ace-utils.h"
 
 void ace_show_error_dialog(GtkWindow *parent, const char *message) {
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(parent,
-        GTK_DIALOG_MODAL,
-        GTK_MESSAGE_ERROR,
-        GTK_BUTTONS_OK,
-        "%s", message);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
+    GtkAlertDialog *dialog = gtk_alert_dialog_new("%s", message);
+    gtk_alert_dialog_show(dialog, parent);
+    g_object_unref(dialog);
 }
 
 char *ace_get_home_dir(void) {

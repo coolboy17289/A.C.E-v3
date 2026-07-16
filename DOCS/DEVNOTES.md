@@ -12,9 +12,9 @@
 
 # COMMIT HISTORY AND PROJECT HISTORY
 
-So, A.C.E, I hope you read the [README](/README.md).
+Please read the [README](/README.md) for project context.
 
-It literally says **"README"**, but now you're here, welcome. This is the development history, progress updates, and commit history of:
+This document records the development history, progress updates, and commit history for:
 
 # A.C.E
 
@@ -26,46 +26,37 @@ A.C.E officially started on:
 
 **15 July 2026**
 
-> Note: I use military time, so all timestamps will be written using the 24-hour format.
+> Note: Timestamps use the 24-hour format.
 
 ---
 
-# First DevNote (Hopefully The Only One Unless It Gets Too Big For GitHub)
+# First DevNote
 
 I started writing this DevNote on:
 
 **16 July 2026 at 1446 hours**
 
-This document will track the progress of A.C.E, including major changes, experiments, features added, problems solved, and important milestones during development.
+This document tracks A.C.E progress, including major changes, experiments, features added, problems solved, and important milestones.
 
 ---
 
 # The Beginning Of A.C.E
 
-So let's get started.
+I began coding A.C.E on **15 July 2026**. At first, the code was essentially a Chromium kiosk.
 
-I started coding A.C.E yesterday, **15 July 2026**. At the time, I actually liked the code, but it was basically only a Chromium kiosk.
-
-TypeScript gave me a lot of problems.
-
-(I hate it.)
-
-So I deleted all my code and started **A.C.E V2**.
+TypeScript caused many issues, so I deleted the initial implementation and started **A.C.E V2**.
 
 We do not talk about A.C.E V2.
 
-And no, I did not delete System32.  
-(That was a joke.)
+No, I did not delete System32. (That was a joke.)
 
-I'm on Linux, and I made some progress before starting debugging with Claude Code. Then Claude Code deleted all my work because it "didn't like it."
-
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+I am on Linux and made progress before debugging with Claude Code. Then Claude Code deleted my work because it "didn't like it."
 
 ---
 
 # Notes
 
-Sorry if you see random stuff in the DevNotes, like update notes or timestamps. Those are mainly reminders to myself, and also for anyone actually reading this.
+This document may include update notes and timestamps. These are reminders for development and for anyone reviewing the project timeline.
 
 ---
 
@@ -76,14 +67,14 @@ Sorry if you see random stuff in the DevNotes, like update notes or timestamps. 
 **Timestamp:**  
 **16 July 2026 at 1452 hours**
 
-- Installing Linux kernel
-- Git pulling boot screen from A.C.E V1
+- Installed Linux kernel
+- Restored boot screen from A.C.E V1 via Git
 
 ---
 
 ## Documentation Update
 
-The README was completed on:
+The README was made at :
 
 **16 July 2026 at 1328 hours**
 
@@ -91,7 +82,7 @@ The README was completed on:
 
 # Continuing The Story
 
-So, after Claude Code deleted everything, I am now working on:
+After the setback, I am now working on:
 
 # A.C.E V3
 
@@ -103,52 +94,33 @@ Current TODO list:
 - Build V1 hardware prototype
 - Test everything and fix problems
 - Create V2
-- Hopefully make V2 work
+- Make V2 work
 - Start A.C.E V2 in Stardance
-- Reduce the cost and make it more affordable
+- Reduce cost and make it more affordable
 
 ---
 
-# Final Thoughts FOR MY PLAN/TODOLIST 
+# Final Thoughts
 
-Hopefully it works. AND SOMEONE HELPS ME 
+The plan is to move forward, rebuild, and keep progress documented.
 
-NOW BACK TO THE DEVNOTES 
+[FIRST BOOT](/Screencast%20From%202026-07-16%2015-32-57.mp4) on
 
-[FIRST BOOT](/Screencast%20From%202026-07-16%2015-32-57.mp4) on 
-   timestamp jul 16 1537 hours 
-  
-adding some type script
-intergrating my project with @Tacocats project 
-[sidera nacio](sideranacio.org)
+Timestamp: 16 July 2026 at 1537 hours
 
-note
-Bootloader:
-Assembly + C
+Notes:
+- Not adding TypeScript
+- Integrating my project with @Tacocats project
+- [sidera nacio](https://sideranacio.org)
 
-Kernel:
-C + Rust + Zig
-
-Drivers:
-C + Rust
-
-GUI:
-C++ + Rust + Vala
-
-Graphics:
-C++ + GLSL + Vulkan
-
-Apps:
-C++ + Rust
-
-AI:
-Python + Mojo + Prolog
-
-Plugins:
-Lua + Lisp
-
-Hardware:
-Verilog + C
-
-Build:
-CMake + Nix
+Platform stack:
+- Bootloader: Assembly + C
+- Kernel: C + Rust + Zig
+- Drivers: C + Rust
+- GUI: C++ + Rust + Vala
+- Graphics: C++ + GLSL + Vulkan
+- Apps: C++ + Rust
+- AI: Python + Mojo + Prolog
+- Plugins: Lua + Lisp
+- Hardware: Verilog + C
+- Build: CMake + Nix

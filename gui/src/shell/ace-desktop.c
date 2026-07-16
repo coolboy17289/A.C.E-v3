@@ -18,7 +18,7 @@ static void ace_desktop_class_init(AceDesktopClass *klass) {
 
 static void ace_desktop_init(AceDesktop *self) {
     gtk_widget_set_layout_manager(GTK_WIDGET(self),
-        gtkBoxLayout_new(GTK_ORIENTATION_VERTICAL, 0));
+        gtk_box_layout_new(GTK_ORIENTATION_VERTICAL));
     gtk_widget_add_css_class(GTK_WIDGET(self), "ace-desktop");
     gtk_widget_set_vexpand(GTK_WIDGET(self), TRUE);
     gtk_widget_set_hexpand(GTK_WIDGET(self), TRUE);
@@ -27,7 +27,7 @@ static void ace_desktop_init(AceDesktop *self) {
     GtkWidget *wallpaper = gtk_drawing_area_new();
     gtk_widget_set_vexpand(wallpaper, TRUE);
     gtk_widget_set_hexpand(wallpaper, TRUE);
-    gtk_widget_set_child(GTK_WIDGET(self), wallpaper);
+    /* Note: ace-desktop is a container widget, children managed by parent */
 }
 
 GtkWidget *ace_desktop_new(void) {

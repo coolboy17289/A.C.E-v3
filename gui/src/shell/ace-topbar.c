@@ -37,7 +37,7 @@ static void ace_topbar_init(AceTopbar *self) {
     GtkWidget *left_box, *center_box, *right_box;
 
     gtk_widget_set_layout_manager(GTK_WIDGET(self),
-        gtkBoxLayout_new(GTK_ORIENTATION_HORIZONTAL, 0));
+        gtk_box_layout_new(GTK_ORIENTATION_HORIZONTAL));
     gtk_widget_add_css_class(GTK_WIDGET(self), "ace-topbar");
     gtk_widget_set_size_request(GTK_WIDGET(self), -1, 32);
 

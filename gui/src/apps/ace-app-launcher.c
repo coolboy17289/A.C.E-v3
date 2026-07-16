@@ -7,11 +7,11 @@
 
 /* Stub launch functions for unimplemented apps */
 static void ace_stub_launch(const char *app_name) {
-    GtkWidget *dialog = gtk_message_dialog_new(NULL,
+    GtkWidget *dialog = gtk_alert_dialog_new(
         GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
         "%s is coming soon!", app_name);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
+    g_object_unref(dialog);
+    g_object_unref(dialog);
 }
 
 void ace_browser_launch(void) { ace_stub_launch("ACE Browser"); }
