@@ -14,7 +14,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DISK="${1:-$SCRIPT_DIR/../kernel-vm/vm-disk.qcow2}"
+DISK="${1:-$SCRIPT_DIR/../ubuntu-noble-cloud.img}"
 MOUNT_DIR="/tmp/ace-boot-install"
 GRUB_THEME_SRC="$SCRIPT_DIR/grub/theme"
 PLYMOUTH_THEME_SRC="$SCRIPT_DIR/plymouth/themes/ace"

@@ -114,3 +114,7 @@ Current TODO list:
 Hopefully it works. AND SOMEONE HELPS ME 
 
 NOW BACK TO THE DEVNOTES 
+
+[FIRST BOOT](/Screencast%20From%202026-07-16%2015-32-57.mp4) on 
+   timestamp jul 16 1537 hours 
+  

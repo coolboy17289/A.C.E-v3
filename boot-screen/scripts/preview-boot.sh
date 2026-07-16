@@ -33,7 +33,11 @@ KERNEL="${1:-}"
 INITRD="${2:-}"
 
 if [ -z "$KERNEL" ]; then
-    if [ -f "$SCRIPT_DIR/../kernel-vm/vmlinuz" ]; then
+    if [ -f "$SCRIPT_DIR/../kernel-vmlinuz" ]; then
+        KERNEL="$SCRIPT_DIR/../kernel-vmlinuz"
+        INITRD="$SCRIPT_DIR/../kernel-initrd.img"
+        echo -e "${GREEN}[*] Using project root kernel files${NC}"
+    elif [ -f "$SCRIPT_DIR/../kernel-vm/vmlinuz" ]; then
         KERNEL="$SCRIPT_DIR/../kernel-vm/vmlinuz"
         INITRD="$SCRIPT_DIR/../kernel-vm/initrd.img"
         echo -e "${GREEN}[*] Using kernel-vm files${NC}"
