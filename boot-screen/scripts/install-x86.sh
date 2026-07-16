@@ -82,14 +82,15 @@ install_grub_theme() {
     # Copy theme files
     cp "$GRUB_THEME_SRC/theme.txt" "$MOUNT_DIR/boot/grub/themes/ace/"
 
-    # Generate GRUB font
-    if command -v grub-mkfont &>/dev/null; then
-        grub-mkfont -s 16 -o "$MOUNT_DIR/boot/grub/themes/ace/Unifont-Regular-16.pf2" \
-            /usr/share/fonts/truetype/unifont/unifont.ttf 2>/dev/null || true
-        grub-mkfont -s 22 -o "$MOUNT_DIR/boot/grub/themes/ace/Unifont-Regular-22.pf2" \
-            /usr/share/fonts/truetype/unifont/unifont.ttf 2>/dev/null || true
-        grub-mkfont -s 48 -o "$MOUNT_DIR/boot/grub/themes/ace/Unifont-Regular-48.pf2" \
-            /usr/share/fonts/truetype/unifont/unifont.ttf 2>/dev/null || true
+    # Generate GRUB font from DejaVu Sans Mono (matching theme.txt font references)
+    local FONT_SRC="/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+    if command -v grub-mkfont &>/dev/null && [ -f "$FONT_SRC" ]; then
+        grub-mkfont -s 12 -o "$MOUNT_DIR/boot/grub/themes/ace/DejaVu-Sans-Mono-12.pf2" "$FONT_SRC" 2>/dev/null || true
+        grub-mkfont -s 14 -o "$MOUNT_DIR/boot/grub/themes/ace/DejaVu-Sans-Mono-14.pf2" "$FONT_SRC" 2>/dev/null || true
+        grub-mkfont -s 16 -o "$MOUNT_DIR/boot/grub/themes/ace/DejaVu-Sans-Mono-16.pf2" "$FONT_SRC" 2>/dev/null || true
+        grub-mkfont -s 18 -o "$MOUNT_DIR/boot/grub/themes/ace/DejaVu-Sans-Mono-18.pf2" "$FONT_SRC" 2>/dev/null || true
+        grub-mkfont -s 22 -o "$MOUNT_DIR/boot/grub/themes/ace/DejaVu-Sans-Mono-22.pf2" "$FONT_SRC" 2>/dev/null || true
+        grub-mkfont -s 48 -o "$MOUNT_DIR/boot/grub/themes/ace/DejaVu-Sans-Mono-48.pf2" "$FONT_SRC" 2>/dev/null || true
     fi
 
     # Update GRUB config to use our theme
