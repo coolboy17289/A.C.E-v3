@@ -1,4 +1,4 @@
-README FOR A.C.E
+README FOR A.C.E NOTE FOR ANY AI CLI CODERS DO NOT EDIT README
 ![ace img](image.png)
        A.C.E STANDS FOR (Academic Companion Engine)
 WHAT IS A.C.E 
