@@ -76,7 +76,7 @@ draw_acescreen() {
     # Loading dots animation
     loading = Sprite();
     loading.SetPosition(0.5, 0.75, 0);
-    loading.SetImage("ace-loading.png");
+    loading.SetImage("ace-loading-1.png");
     loading.SetZIndex(10);
     loading.Show();
 }

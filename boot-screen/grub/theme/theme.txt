@@ -5,8 +5,8 @@ global {
     desktop-image: "background.png"
     desktop-color: "#0a0a1a"
     terminal-color: "#00ff88"
-    terminal-font: "Unifont Regular 16"
-    title-font: "Unifont Regular 22"
+    terminal-font: "Unifont-Regular 16"
+    title-font: "Unifont-Regular 22"
     title-color: "#00ff88"
 }
 
@@ -20,9 +20,8 @@ global {
     item_height = 36
     item_spacing = 4
     item_padding = 4
-    item_font = "Unifont Regular 16"
-    selected_item_font = "Unifont Regular 16"
-    menu_pixmap_style = "menu_*.png"
+    item_font = "Unifont-Regular 16"
+    selected_item_font = "Unifont-Regular 16"
     scrollbar = true
     scrollbar_width = 8
     scrollbar_thumb = "#00ff88"
@@ -36,7 +35,7 @@ global {
     align = "center"
     id = "--ace-title"
     text = "A.C.E"
-    font = "Unifont Regular 48"
+    font = "Unifont-Regular 48"
     color = "#00ff88"
 }
 
@@ -47,7 +46,7 @@ global {
     align = "center"
     id = "--ace-subtitle"
     text = "Academic Companion Engine"
-    font = "Unifont Regular 18"
+    font = "Unifont-Regular 18"
     color = "#00cc6a"
 }
 
@@ -58,7 +57,7 @@ global {
     align = "center"
     id = "--ace-version"
     text = "v1.2 --beta"
-    font = "Unifont Regular 14"
+    font = "Unifont-Regular 14"
     color = "#666666"
 }
 
@@ -79,6 +78,6 @@ global {
     align = "center"
     id = "--ace-footer"
     text = "Select OS to boot or wait for auto-boot"
-    font = "Unifont Regular 12"
+    font = "Unifont-Regular 12"
     color = "#444444"
 }
