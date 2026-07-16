@@ -20,6 +20,12 @@ For more information, visit the official website:
 
 [THE WEBSITE](https://ace-website-pied-xi.vercel.app/)
 
+OR
+
+GO TO DOCS:
+
+[THE DOCS](/DOCS/)
+
 ---
 
 # Running the A.C.E Kernel in QEMU
