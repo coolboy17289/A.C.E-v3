@@ -9,6 +9,14 @@ define ACE_DARK   0.04 0.04 0.1
 define ACE_WHITE  1.0 1.0 1.0
 define ACE_GRAY   0.4 0.4 0.4
 
+# Global sprites (accessible from all handlers)
+global logo;
+global title;
+global subtitle;
+global version;
+global loading;
+global progress_bar;
+
 # Progress tracking
 progress = 0;
 boot_stage = "starting";
@@ -30,8 +38,8 @@ main() {
     progress_bar.SetBorderWidth(0.001);
     progress_bar.Show();
 
-    # Start the boot animation
-    boot_animation();
+    # Set up refresh function for animation
+    Plymouth.SetRefreshFunction(boot_animation);
 }
 
 draw_acescreen() {
@@ -72,23 +80,18 @@ draw_acescreen() {
 }
 
 boot_animation() {
-    # Animate loading dots
-    i = 0;
-    while(i < 3) {
-        if(i == 0) {
-            loading.SetImage("ace-loading-1.png");
-        } elsif(i == 1) {
-            loading.SetImage("ace-loading-2.png");
-        } else {
-            loading.SetImage("ace-loading-3.png");
-        }
+    # Animate loading dots using refresh function
+    static frame = 0;
+    frame = (frame + 1) % 6;
 
-        Plymouth.ReloadSplash();
-        pause(0.3);
-        i = i + 1;
+    if(frame < 2) {
+        loading.SetImage("ace-loading-1.png");
+    } elsif(frame < 4) {
+        loading.SetImage("ace-loading-2.png");
+    } else {
+        loading.SetImage("ace-loading-3.png");
     }
 
-    # Loop the animation
     Plymouth.ReloadSplash();
 }
 
