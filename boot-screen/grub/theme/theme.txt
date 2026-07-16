@@ -1,0 +1,84 @@
+# ACE Boot Screen Theme for GRUB2
+# Compatible with x86/UEFI systems (QEMU, desktop, laptop)
+
+global {
+    desktop-image: "background.png"
+    desktop-color: "#0a0a1a"
+    terminal-color: "#00ff88"
+    terminal-font: "Unifont Regular 16"
+    title-font: "Unifont Regular 22"
+    title-color: "#00ff88"
+}
+
++ boot_menu {
+    left = 15%
+    top = 35%
+    width = 70%
+    height = 45%
+    item_color = "#c0c0c0"
+    selected_item_color = "#00ff88"
+    item_height = 36
+    item_spacing = 4
+    item_padding = 4
+    item_font = "Unifont Regular 16"
+    selected_item_font = "Unifont Regular 16"
+    menu_pixmap_style = "menu_*.png"
+    scrollbar = true
+    scrollbar_width = 8
+    scrollbar_thumb = "#00ff88"
+    scrollbar_track = "#1a1a2e"
+}
+
++ label {
+    left = 15%
+    top = 8%
+    width = 70%
+    align = "center"
+    id = "--ace-title"
+    text = "A.C.E"
+    font = "Unifont Regular 48"
+    color = "#00ff88"
+}
+
++ label {
+    left = 15%
+    top = 18%
+    width = 70%
+    align = "center"
+    id = "--ace-subtitle"
+    text = "Academic Companion Engine"
+    font = "Unifont Regular 18"
+    color = "#00cc6a"
+}
+
++ label {
+    left = 15%
+    top = 24%
+    width = 70%
+    align = "center"
+    id = "--ace-version"
+    text = "v1.2 --beta"
+    font = "Unifont Regular 14"
+    color = "#666666"
+}
+
++ progress_bar {
+    id = "--ace-progress"
+    left = 25%
+    top = 82%
+    width = 50%
+    height = 3
+    bg_color = "#1a1a2e"
+    fg_color = "#00ff88"
+}
+
++ label {
+    left = 15%
+    top = 88%
+    width = 70%
+    align = "center"
+    id = "--ace-footer"
+    text = "Select OS to boot or wait for auto-boot"
+    font = "Unifont Regular 12"
+    color = "#444444"
+}

@@ -1,0 +1,137 @@
+
+# ACE Boot Splash - Plymouth Script
+# Compatible with x86 QEMU and Raspberry Pi 5 (720x1280 touch display)
+# Animated boot screen for A.C.E Academic Companion Engine
+
+# Colors
+define ACE_GREEN 0.0 1.0 0.53
+define ACE_DARK   0.04 0.04 0.1
+define ACE_WHITE  1.0 1.0 1.0
+define ACE_GRAY   0.4 0.4 0.4
+
+# Progress tracking
+progress = 0;
+boot_stage = "starting";
+
+# Main entry point - called when Plymouth starts
+main() {
+    # Set background color
+    Window.SetBackgroundTopColor(ACE_DARK);
+    Window.SetBackgroundBottomColor(ACE_DARK);
+
+    # Draw the ACE boot screen
+    draw_acescreen();
+
+    # Show a progress bar
+    progress_bar = ProgressBar();
+    progress_bar.SetPosition(0.25, 0.85, 0.50, 0.02);
+    progress_bar.SetFillColor(ACE_GREEN);
+    progress_bar.SetBorderColor(ACE_GREEN);
+    progress_bar.SetBorderWidth(0.001);
+    progress_bar.Show();
+
+    # Start the boot animation
+    boot_animation();
+}
+
+draw_acescreen() {
+    # Create logo text sprite
+    logo = Sprite();
+    logo.SetPosition(0.5, 0.20, 0);
+    logo.SetImage("ace-logo.png");
+    logo.SetZIndex(10);
+    logo.Show();
+
+    # Title text
+    title = Sprite();
+    title.SetPosition(0.5, 0.35, 0);
+    title.SetImage("ace-title.png");
+    title.SetZIndex(10);
+    title.Show();
+
+    # Subtitle text
+    subtitle = Sprite();
+    subtitle.SetPosition(0.5, 0.45, 0);
+    subtitle.SetImage("ace-subtitle.png");
+    subtitle.SetZIndex(10);
+    subtitle.Show();
+
+    # Version text
+    version = Sprite();
+    version.SetPosition(0.5, 0.52, 0);
+    version.SetImage("ace-version.png");
+    version.SetZIndex(10);
+    version.Show();
+
+    # Loading dots animation
+    loading = Sprite();
+    loading.SetPosition(0.5, 0.75, 0);
+    loading.SetImage("ace-loading.png");
+    loading.SetZIndex(10);
+    loading.Show();
+}
+
+boot_animation() {
+    # Animate loading dots
+    i = 0;
+    while(i < 3) {
+        if(i == 0) {
+            loading.SetImage("ace-loading-1.png");
+        } elsif(i == 1) {
+            loading.SetImage("ace-loading-2.png");
+        } else {
+            loading.SetImage("ace-loading-3.png");
+        }
+
+        Plymouth.ReloadSplash();
+        pause(0.3);
+        i = i + 1;
+    }
+
+    # Loop the animation
+    Plymouth.ReloadSplash();
+}
+
+# Called when boot progress updates
+on update(root) {
+    progress = Pulse();
+    progress_bar.SetValue(progress);
+
+    if(progress > 0.3 && progress <= 0.6) {
+        if(boot_stage != "kernel") {
+            boot_stage = "kernel";
+            Plymouth.Message("Loading kernel modules...");
+        }
+    } elsif(progress > 0.6 && progress <= 0.9) {
+        if(boot_stage != "services") {
+            boot_stage = "services";
+            Plymouth.Message("Starting services...");
+        }
+    } elsif(progress > 0.9) {
+        if(boot_stage != "ready") {
+            boot_stage = "ready";
+            Plymouth.Message("System ready!");
+        }
+    }
+}
+
+# Called when Plymouth is about to quit
+on quit() {
+    # Fade out the boot screen
+    logo.SetOpacity(0);
+    title.SetOpacity(0);
+    subtitle.SetOpacity(0);
+    version.SetOpacity(0);
+    loading.SetOpacity(0);
+    progress_bar.Hide();
+
+    Plymouth.ReloadSplash();
+}
+
+# Called when keyboard input is received
+on keydown(key) {
+    # Allow user to see boot messages by pressing Escape
+    if(key == "escape") {
+        Plymouth.HideSplash();
+    }
+}

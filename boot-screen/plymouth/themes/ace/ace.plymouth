@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=ACE Boot Screen
+Description=A.C.E Academic Companion Engine Boot Splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/ace
+ScriptFile=/usr/share/plymouth/themes/ace/ace.script
