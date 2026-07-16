@@ -16,6 +16,7 @@ global subtitle;
 global version;
 global loading;
 global progress_bar;
+global frame = -1;
 
 # Progress tracking
 progress = 0;
@@ -40,6 +41,7 @@ main() {
 
     # Set up refresh function for animation
     Plymouth.SetRefreshFunction(boot_animation);
+    Plymouth.SetRefreshInterval(300);
 }
 
 draw_acescreen() {
@@ -81,7 +83,6 @@ draw_acescreen() {
 
 boot_animation() {
     # Animate loading dots using refresh function
-    static frame = 0;
     frame = (frame + 1) % 6;
 
     if(frame < 2) {

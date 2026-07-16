@@ -37,6 +37,7 @@ echo -e "${GREEN}[1/6] Generating background image (1920x1080)...${NC}"
 
 # Create dark background with gradient
 convert -size 1920x1080 \
+    -alpha set \
     xc:"#0a0a1a" \
     -fill "#0d0d2b" -draw "rectangle 0,0 1920,540" \
     -fill "#060612" -draw "rectangle 0,540 1920,1080" \
@@ -45,41 +46,45 @@ convert -size 1920x1080 \
 echo -e "${GREEN}[2/6] Generating ACE logo (ASCII art)...${NC}"
 
 # Create ACE ASCII art logo
-convert -size 600x120 xc:"#0a0a1a" \
+convert -size 600x120 xc:transparent \
     -font "DejaVu-Sans-Mono-Bold" -pointsize 60 \
     -fill "#00ff88" -stroke "#00cc6a" -strokewidth 2 \
     -gravity Center \
     -annotate +0+0 "A.C.E" \
+    -alpha set \
     "$ASSETS_DIR/ace-logo.png"
 
 echo -e "${GREEN}[3/6] Generating title image...${NC}"
 
 # Create title text
-convert -size 800x60 xc:"#0a0a1a" \
+convert -size 800x60 xc:transparent \
     -font "DejaVu-Sans-Bold" -pointsize 32 \
     -fill "#00ff88" \
     -gravity Center \
     -annotate +0+0 "ACADEMIC COMPANION ENGINE" \
+    -alpha set \
     "$ASSETS_DIR/ace-title.png"
 
 echo -e "${GREEN}[4/6] Generating subtitle image...${NC}"
 
 # Create subtitle
-convert -size 600x40 xc:"#0a0a1a" \
+convert -size 600x40 xc:transparent \
     -font "DejaVu-Sans" -pointsize 18 \
     -fill "#00cc6a" \
     -gravity Center \
     -annotate +0+0 "Academic Companion Engine" \
+    -alpha set \
     "$ASSETS_DIR/ace-subtitle.png"
 
 echo -e "${GREEN}[5/6] Generating version image...${NC}"
 
 # Create version text
-convert -size 200x30 xc:"#0a0a1a" \
+convert -size 200x30 xc:transparent \
     -font "DejaVu-Sans" -pointsize 14 \
     -fill "#666666" \
     -gravity Center \
     -annotate +0+0 "v1.2 --beta" \
+    -alpha set \
     "$ASSETS_DIR/ace-version.png"
 
 echo -e "${GREEN}[6/6] Generating loading animation frames...${NC}"
@@ -95,11 +100,12 @@ for i in 1 2 3; do
         fi
     done
 
-    convert -size 200x40 xc:"#0a0a1a" \
+    convert -size 200x40 xc:transparent \
         -font "DejaVu-Sans" -pointsize 24 \
         -fill "#00ff88" \
         -gravity Center \
         -annotate +0+0 "$dots" \
+        -alpha set \
         "$ASSETS_DIR/ace-loading-${i}.png"
 done
 

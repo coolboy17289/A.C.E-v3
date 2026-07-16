@@ -2,7 +2,7 @@
 # ============================================================
 # ACE Boot Screen Installer - Raspberry Pi 5
 # Installs Plymouth splash + RPi bootloader config for ACE
-# Usage: sudo ./install-rpi5.sh [boot_partition_mount]
+# Usage: ./install-rpi5.sh [boot_partition_mount]
 #
 # This script is meant to be run ON the Raspberry Pi 5,
 # or against a mounted SD card / NVMe image.
@@ -60,19 +60,19 @@ configure_rpi_boot() {
 
     # Backup config files
     if [ -f "$config_file" ]; then
-        sudo cp "$config_file" "${config_file}.ace-backup"
+        cp "$config_file" "${config_file}.ace-backup"
     fi
     if [ -f "$cmdline_file" ]; then
-        sudo cp "$cmdline_file" "${cmdline_file}.ace-backup"
+        cp "$cmdline_file" "${cmdline_file}.ace-backup"
     fi
 
     # Add ACE boot config to config.txt
     if [ -f "$config_file" ]; then
         # Remove any previous ACE config block
-        sudo sed -i '/# === ACE Boot Screen ===/,/# === End ACE ===/d' "$config_file"
+        sed -i '/# === ACE Boot Screen ===/,/# === End ACE ===/d' "$config_file"
 
         # Add ACE configuration
-        cat << 'ACE_CONFIG' | sudo tee -a "$config_file" > /dev/null
+        cat << 'ACE_CONFIG' | tee -a "$config_file" > /dev/null
 
 # === ACE Boot Screen ===
 # A.C.E Academic Companion Engine - Boot Display Config
@@ -85,10 +85,11 @@ boot_delay=1
 
 # HDMI/DSI display configuration for RPi5 Touch Display
 # Touch Display 2 native: 720x1280 portrait
-# For landscape: use display_rotate in config.txt
+# Rotate to landscape for touch display
 dtoverlay=vc4-kms-v3d
+display_rotate=1
 
-# Console framebuffer settings
+# Console framebuffer settings (landscape after rotation)
 framebuffer_width=1280
 framebuffer_height=720
 
@@ -108,20 +109,20 @@ ACE_CONFIG
     if [ -f "$cmdline_file" ]; then
         # Ensure splash and quiet are in cmdline.txt for Plymouth
         if ! grep -q "splash" "$cmdline_file"; then
-            sudo sed -i 's/$/ splash/' "$cmdline_file"
+            sed -i 's/$/ splash/' "$cmdline_file"
         fi
         if ! grep -q "quiet" "$cmdline_file"; then
-            sudo sed -i 's/$/ quiet/' "$cmdline_file"
+            sed -i 's/$/ quiet/' "$cmdline_file"
         fi
 
         # Ensure plymouth theme is specified
         if ! grep -q "plymouth" "$cmdline_file"; then
-            sudo sed -i 's/$/ plymouth.use-udev/' "$cmdline_file"
+            sed -i 's/$/ plymouth.use-udev/' "$cmdline_file"
         fi
 
         # Ensure DRM/KMS is enabled for display
         if ! grep -q "drm" "$cmdline_file"; then
-            sudo sed -i 's/$/ drm.rmodeset=1/' "$cmdline_file"
+            sed -i 's/$/ drm.rmodeset=1/' "$cmdline_file"
         fi
     fi
 
@@ -135,25 +136,25 @@ install_plymouth_theme() {
     local theme_dir="$ROOT_MOUNT/usr/share/plymouth/themes/ace"
 
     # Create theme directory
-    sudo mkdir -p "$theme_dir"
+    mkdir -p "$theme_dir"
 
     # Copy theme files
-    sudo cp "$PLYMOUTH_THEME_SRC/ace.plymouth" "$theme_dir/"
-    sudo cp "$PLYMOUTH_THEME_SRC/ace.script" "$theme_dir/"
+    cp "$PLYMOUTH_THEME_SRC/ace.plymouth" "$theme_dir/"
+    cp "$PLYMOUTH_THEME_SRC/ace.script" "$theme_dir/"
 
     # Copy splash images if they exist
     if [ -d "$ASSETS_DIR" ]; then
-        sudo cp "$ASSETS_DIR/"*.png "$theme_dir/" 2>/dev/null || true
+        cp "$ASSETS_DIR/"*.png "$theme_dir/" 2>/dev/null || true
     fi
 
     # Register the theme
-    sudo update-alternatives --install \
+    update-alternatives --install \
         /usr/share/plymouth/themes/default.plymouth \
         default.plymouth \
         /usr/share/plymouth/themes/ace/ace.plymouth 100 2>/dev/null || true
 
     # Set as default
-    sudo update-alternatives --set \
+    update-alternatives --set \
         default.plymouth \
         /usr/share/plymouth/themes/ace/ace.plymouth 2>/dev/null || true
 
@@ -163,7 +164,7 @@ install_plymouth_theme() {
 # Rebuild initramfs
 rebuild_initramfs() {
     echo -e "${GREEN}[*] Rebuilding initramfs with Plymouth...${NC}"
-    sudo update-initramfs -u 2>/dev/null || \
+    update-initramfs -u 2>/dev/null || \
         echo -e "${YELLOW}[!] initramfs rebuild skipped${NC}"
     echo -e "${GREEN}[+] initramfs rebuilt${NC}"
 }
@@ -211,4 +212,4 @@ echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${YELLOW}Touch Display: 720x1280 (portrait)${NC}"
 echo -e "${YELLOW}HAT: I2C + SPI enabled for custom hardware${NC}"
-echo -e "${YELLOW}Reboot: sudo reboot${NC}"
+echo -e "${YELLOW}Reboot: reboot${NC}"
