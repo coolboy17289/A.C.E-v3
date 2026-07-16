@@ -10,6 +10,12 @@
 
 set -e
 
+# Check root privileges
+if [[ $EUID -ne 0 ]]; then
+    echo -e "\033[0;31m[!] This script must be run as root\033[0m"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BOOT_MOUNT="${1:-/boot}"
 ROOT_MOUNT="${2:-/}"
@@ -168,20 +174,13 @@ configure_hat_hardware() {
 
     local cmdline_file="$BOOT_MOUNT/cmdline.txt"
 
-    if [ -f "$cmdline_file" ]; then
-        # Add common HAT hardware support (I2C, SPI, GPIO)
-        if ! grep -q "i2c-dev" "$cmdline_file"; then
-            sudo sed -i 's/$/ i2c-dev.bcm2835/' "$cmdline_file"
+    # Enable I2C and SPI overlays in config.txt (RPi5 uses overlays, not cmdline)
+    if [ -f "$BOOT_MOUNT/config.txt" ]; then
+        if ! grep -q "dtparam=i2c_arm" "$BOOT_MOUNT/config.txt"; then
+            echo "dtparam=i2c_arm=on" | tee -a "$BOOT_MOUNT/config.txt" > /dev/null
         fi
-
-        # Ensure I2C is enabled for HAT communication
-        if [ -f "$BOOT_MOUNT/config.txt" ]; then
-            if ! grep -q "dtparam=i2c_arm" "$BOOT_MOUNT/config.txt"; then
-                echo "dtparam=i2c_arm=on" | sudo tee -a "$BOOT_MOUNT/config.txt" > /dev/null
-            fi
-            if ! grep -q "dtparam=spi" "$BOOT_MOUNT/config.txt"; then
-                echo "dtparam=spi=on" | sudo tee -a "$BOOT_MOUNT/config.txt" > /dev/null
-            fi
+        if ! grep -q "dtparam=spi" "$BOOT_MOUNT/config.txt"; then
+            echo "dtparam=spi=on" | tee -a "$BOOT_MOUNT/config.txt" > /dev/null
         fi
     fi
 

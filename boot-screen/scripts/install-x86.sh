@@ -7,6 +7,12 @@
 
 set -e
 
+# Check root privileges
+if [[ $EUID -ne 0 ]]; then
+    echo -e "\033[0;31m[!] This script must be run as root\033[0m"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DISK="${1:-$SCRIPT_DIR/../kernel-vm/vm-disk.qcow2}"
 MOUNT_DIR="/tmp/ace-boot-install"

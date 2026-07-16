@@ -1,0 +1,4 @@
+# Generated assets - regenerate with: ./scripts/generate-assets.sh
+*.png
+*.pf2
+!README.md
