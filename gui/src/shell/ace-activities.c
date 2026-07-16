@@ -6,6 +6,7 @@
 
 #include <gtk/gtk.h>
 #include "ace-activities.h"
+#include "../apps/ace-app-launcher.h"
 
 struct _AceActivities {
     GtkWidget parent_instance;
@@ -16,23 +17,24 @@ struct _AceActivities {
 G_DEFINE_TYPE(AceActivities, ace_activities, GTK_TYPE_WIDGET)
 
 typedef struct {
+    const char *app_id;
     const char *name;
     const char *icon;
     const char *category;
 } AppInfo;
 
 static AppInfo all_apps[] = {
-    { "Files",       "📁", "Core"      },
-    { "Settings",    "⚙️", "Core"      },
-    { "Terminal",    "🖥️", "Core"      },
-    { "Calculator",  "🧮", "Productivity" },
-    { "Clock",       "🕐", "Productivity" },
-    { "Notes",       "📝", "Productivity" },
-    { "Browser",     "🌐", "Internet"  },
-    { "AI Assistant","🤖", "AI"        },
-    { "Code Editor", "💻", "Development" },
-    { "Store",       "🏪", "System"    },
-    { NULL, NULL, NULL }
+    { "ace-files",       "Files",       "📁", "Core"      },
+    { "ace-settings",    "Settings",    "⚙️", "Core"      },
+    { "ace-terminal",    "Terminal",    "🖥️", "Core"      },
+    { "ace-calculator",  "Calculator",  "🧮", "Productivity" },
+    { "ace-clock",       "Clock",       "🕐", "Productivity" },
+    { "ace-notes",       "Notes",       "📝", "Productivity" },
+    { "ace-browser",     "Browser",     "🌐", "Internet"  },
+    { "ace-ai-assistant","AI Assistant","🤖", "AI"        },
+    { "ace-code-editor", "Code Editor", "💻", "Development" },
+    { "ace-store",       "Store",       "🏪", "System"    },
+    { NULL, NULL, NULL, NULL }
 };
 
 static void on_search_changed(GtkSearchEntry *entry, gpointer user_data) {
@@ -44,9 +46,9 @@ static void on_search_changed(GtkSearchEntry *entry, gpointer user_data) {
 }
 
 static void on_app_clicked(GtkButton *button, gpointer user_data) {
-    const char *app_name = (const char *)user_data;
-    g_print("[Activities] Launching: %s\n", app_name);
-    /* TODO: Close activities and launch the app */
+    (void)button;
+    const char *app_id = (const char *)user_data;
+    ace_app_launch_by_id(app_id);
 }
 
 static void ace_activities_class_init(AceActivitiesClass *klass) {
@@ -104,7 +106,7 @@ static void ace_activities_init(AceActivities *self) {
         gtk_button_set_child(GTK_BUTTON(btn), icon_label);
 
         g_signal_connect(btn, "clicked",
-            G_CALLBACK(on_app_clicked), (gpointer)app->name);
+            G_CALLBACK(on_app_clicked), (gpointer)app->app_id);
 
         GtkWidget *name_label = gtk_label_new(app->name);
         gtk_widget_add_css_class(name_label, "ace-app-name");

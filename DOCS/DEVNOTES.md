@@ -121,6 +121,7 @@ NOW BACK TO THE DEVNOTES
 adding some type script
 intergrating my project with @Tacocats project 
 [sidera nacio](sideranacio.org)
+
 note
 Bootloader:
 Assembly + C

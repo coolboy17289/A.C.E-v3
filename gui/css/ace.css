@@ -1,0 +1,231 @@
+/* ============================================
+ * A.C.E Desktop Theme - GTK4 CSS
+ * Green dark theme for Raspberry Pi 4
+ * ============================================ */
+
+/* Root variables */
+@define-color ace_green #00ff88;
+@define-color ace_green_dim #00cc6a;
+@define-color ace_bg_primary #0a0a1a;
+@define-color ace_bg_secondary #0d0d2b;
+@define-color ace_bg_surface #1a1a2e;
+@define-color ace_bg_elevated #222244;
+@define-color ace_text_primary #e0e0e0;
+@define-color ace_text_secondary #a0a0a0;
+@define-color ace_text_muted #666666;
+@define-color ace_border #2a2a4a;
+
+/* ===== Top Bar ===== */
+.ace-topbar {
+    background-color: alpha(@ace_bg_secondary, 0.85);
+    border-bottom: 1px solid alpha(@ace_green, 0.15);
+}
+
+.ace-topbar-btn {
+    background: transparent;
+    color: @ace_text_primary;
+    border: none;
+    padding: 2px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.ace-topbar-btn:hover {
+    background: alpha(@ace_green, 0.1);
+    color: @ace_green;
+}
+
+.ace-topbar-clock {
+    color: @ace_text_secondary;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ===== Dock ===== */
+.ace-dock {
+    background: transparent;
+}
+
+.ace-dock-bg {
+    background: alpha(@ace_bg_primary, 0.75);
+    border: 1px solid alpha(@ace_green, 0.1);
+    border-radius: 16px;
+    padding: 4px 8px;
+}
+
+.ace-dock-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 10px;
+    min-width: 40px;
+    min-height: 40px;
+}
+.ace-dock-btn:hover {
+    background: alpha(@ace_green, 0.12);
+}
+
+/* ===== Activities Overlay ===== */
+.ace-activities {
+    background: alpha(@ace_bg_primary, 0.92);
+    border-radius: 16px;
+    border: 1px solid alpha(@ace_green, 0.1);
+}
+
+.ace-search {
+    background: alpha(@ace_bg_surface, 0.8);
+    border: 1px solid alpha(@ace_green, 0.2);
+    border-radius: 24px;
+    color: @ace_text_primary;
+    padding: 8px 20px;
+    font-size: 14px;
+}
+.ace-search:focus {
+    border-color: @ace_green;
+}
+
+.ace-app-btn {
+    background: alpha(@ace_bg_surface, 0.6);
+    border: 1px solid alpha(white, 0.05);
+    border-radius: 14px;
+    min-width: 80px;
+    min-height: 80px;
+    padding: 12px;
+}
+.ace-app-btn:hover {
+    background: alpha(@ace_green, 0.08);
+    border-color: alpha(@ace_green, 0.2);
+}
+
+.ace-app-name {
+    color: #c0c0c0;
+    font-size: 11px;
+}
+
+/* ===== Desktop ===== */
+.ace-desktop {
+    background: linear-gradient(135deg, #0a0a2a 0%, #0d1a3a 50%, #0a0a1a 100%);
+}
+
+/* ===== App Windows ===== */
+.ace-app-window {
+    background: alpha(@ace_bg_secondary, 0.95);
+    border: 1px solid alpha(@ace_green, 0.15);
+    border-radius: 12px;
+}
+
+.ace-app-header {
+    background: alpha(@ace_bg_primary, 0.8);
+    border-bottom: 1px solid alpha(@ace_green, 0.1);
+    padding: 8px 12px;
+}
+
+/* ===== Calculator ===== */
+.ace-calc-display {
+    background: alpha(@ace_bg_surface, 0.8);
+    border: 1px solid alpha(@ace_green, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 28px;
+    font-weight: bold;
+    color: @ace_green;
+}
+
+.ace-calc-btn {
+    background: alpha(@ace_bg_surface, 0.6);
+    border: 1px solid alpha(white, 0.05);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 18px;
+    color: @ace_text_primary;
+}
+.ace-calc-btn:hover {
+    background: alpha(@ace_green, 0.1);
+}
+
+.ace-calc-btn-op {
+    background: alpha(@ace_green, 0.15);
+    color: @ace_green;
+}
+.ace-calc-btn-op:hover {
+    background: alpha(@ace_green, 0.25);
+}
+
+/* ===== Clock ===== */
+.ace-clock-time {
+    font-size: 64px;
+    font-weight: bold;
+    color: @ace_green;
+}
+
+.ace-clock-date {
+    font-size: 16px;
+    color: @ace_text_secondary;
+}
+
+/* ===== Terminal ===== */
+.ace-terminal-input {
+    background: alpha(@ace_bg_surface, 0.8);
+    border: 1px solid alpha(@ace_green, 0.2);
+    border-radius: 8px;
+    color: @ace_green;
+    font-family: monospace;
+    padding: 8px 12px;
+}
+
+/* ===== Settings Sidebar ===== */
+.ace-settings-sidebar {
+    background: alpha(@ace_bg_secondary, 0.5);
+}
+
+/* ===== File List ===== */
+.ace-file-info {
+    color: @ace_text_muted;
+    font-size: 12px;
+}
+
+/* ===== Color Swatches ===== */
+.ace-color-swatch {
+    border-radius: 50%;
+    min-width: 40px;
+    min-height: 40px;
+    border: 2px solid transparent;
+}
+.ace-color-swatch:hover {
+    border-color: @ace_text_secondary;
+}
+
+/* ===== Scrollbar ===== */
+scrollbar {
+    background: @ace_bg_primary;
+}
+scrollbar slider {
+    background: @ace_border;
+    border-radius: 3px;
+    min-width: 6px;
+    min-height: 6px;
+}
+scrollbar slider:hover {
+    background: @ace_green_dim;
+}
+
+/* ===== Buttons ===== */
+button {
+    color: @ace_text_primary;
+    border: none;
+}
+button:hover {
+    background: alpha(@ace_green, 0.08);
+}
+
+/* ===== Entry / Text Input ===== */
+entry {
+    background: alpha(@ace_bg_surface, 0.8);
+    border: 1px solid @ace_border;
+    border-radius: 8px;
+    color: @ace_text_primary;
+    padding: 6px 12px;
+}
+entry:focus {
+    border-color: alpha(@ace_green, 0.5);
+}

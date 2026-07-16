@@ -27,9 +27,10 @@ struct _AceWindow {
 
 G_DEFINE_TYPE(AceWindow, ace_window, GTK_TYPE_APPLICATION_WINDOW)
 
+/* Forward declaration */
+static void ace_window_build_ui(AceWindow *self);
+
 /* Forward declarations */
-static void on_activities_clicked(GtkButton *button, gpointer user_data);
-static void on_close_clicked(GtkButton *button, gpointer user_data);
 
 static void ace_window_class_init(AceWindowClass *klass) {
     /* No special class methods needed for now */

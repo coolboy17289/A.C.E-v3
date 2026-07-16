@@ -5,6 +5,7 @@
 
 #include <gtk/gtk.h>
 #include "ace-dock.h"
+#include "../apps/ace-app-launcher.h"
 
 struct _AceDock {
     GtkWidget parent_instance;
@@ -30,9 +31,9 @@ static DockApp default_dock_apps[] = {
 };
 
 static void on_dock_app_clicked(GtkButton *button, gpointer user_data) {
+    (void)button;
     const char *app_id = (const char *)user_data;
-    g_print("[ACE Dock] Launching: %s\n", app_id);
-    /* TODO: Launch the actual app window */
+    ace_app_launch_by_id(app_id);
 }
 
 static void ace_dock_class_init(AceDockClass *klass) {

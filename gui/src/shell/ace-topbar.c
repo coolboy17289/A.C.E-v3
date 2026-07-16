@@ -1,13 +1,12 @@
 /* ============================================
  * A.C.E GUI - Top Bar
  * Activities button, clock, system tray
- * Inspired by GNOME top bar
  * ============================================ */
 
 #include <gtk/gtk.h>
 #include "ace-topbar.h"
 
-struct _AceWidget {
+struct _AceTopbar {
     GtkWidget parent_instance;
     GtkWidget *time_label;
     guint timer_id;
@@ -26,15 +25,12 @@ static gboolean update_clock(gpointer user_data) {
 }
 
 static void on_activities_clicked(GtkButton *button, gpointer user_data) {
-    /* Emit signal to toggle activities overlay */
-    AceTopbar *self = ACE_TOPBAR(user_data);
-    (void)self;
+    (void)button; (void)user_data;
     g_print("Activities clicked\n");
 }
 
 static void ace_topbar_class_init(AceTopbarClass *klass) {
-    GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-    gtk_widget_class_set_template_from_resource(widget_class, NULL);
+    /* Widget class setup */
 }
 
 static void ace_topbar_init(AceTopbar *self) {
@@ -43,8 +39,6 @@ static void ace_topbar_init(AceTopbar *self) {
     gtk_widget_set_layout_manager(GTK_WIDGET(self),
         gtkBoxLayout_new(GTK_ORIENTATION_HORIZONTAL, 0));
     gtk_widget_add_css_class(GTK_WIDGET(self), "ace-topbar");
-
-    /* Set height */
     gtk_widget_set_size_request(GTK_WIDGET(self), -1, 32);
 
     /* Left: Activities button */
@@ -56,7 +50,6 @@ static void ace_topbar_init(AceTopbar *self) {
     gtk_widget_add_css_class(activities_btn, "ace-topbar-btn");
     g_signal_connect(activities_btn, "clicked", G_CALLBACK(on_activities_clicked), self);
     gtk_box_append(GTK_BOX(left_box), activities_btn);
-
     gtk_widget_set_parent(left_box, GTK_WIDGET(self));
 
     /* Center: Clock */
@@ -68,7 +61,6 @@ static void ace_topbar_init(AceTopbar *self) {
     self->time_label = gtk_label_new("");
     gtk_widget_add_css_class(self->time_label, "ace-topbar-clock");
     gtk_box_append(GTK_BOX(center_box), self->time_label);
-
     gtk_widget_set_parent(center_box, GTK_WIDGET(self));
 
     /* Right: System indicators */
@@ -76,13 +68,9 @@ static void ace_topbar_init(AceTopbar *self) {
     gtk_widget_set_halign(right_box, GTK_ALIGN_END);
     gtk_widget_set_valign(right_box, GTK_ALIGN_CENTER);
 
-    GtkWidget *vol_label = gtk_label_new("🔊");
-    GtkWidget *net_label = gtk_label_new("📶");
-    GtkWidget *pwr_label = gtk_label_new("🔋");
-    gtk_box_append(GTK_BOX(right_box), vol_label);
-    gtk_box_append(GTK_BOX(right_box), net_label);
-    gtk_box_append(GTK_BOX(right_box), pwr_label);
-
+    gtk_box_append(GTK_BOX(right_box), gtk_label_new("🔊"));
+    gtk_box_append(GTK_BOX(right_box), gtk_label_new("📶"));
+    gtk_box_append(GTK_BOX(right_box), gtk_label_new("🔋"));
     gtk_widget_set_parent(right_box, GTK_WIDGET(self));
 
     /* Start clock timer */
@@ -90,6 +78,6 @@ static void ace_topbar_init(AceTopbar *self) {
     self->timer_id = g_timeout_add_seconds(1, update_clock, self);
 }
 
-void ace_topbar_new(void) {
-    /* Constructor wrapper - returns GtkWidget* */
+GtkWidget *ace_topbar_new(void) {
+    return g_object_new(ACE_TOPBAR_TYPE, NULL);
 }

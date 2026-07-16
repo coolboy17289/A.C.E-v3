@@ -54,6 +54,7 @@ set(WM_SOURCES
 
 # Source files - Apps
 set(APP_SOURCES
+    src/apps/ace-app-launcher.c
     src/apps/ace-files.c
     src/apps/ace-settings.c
     src/apps/ace-terminal.c
