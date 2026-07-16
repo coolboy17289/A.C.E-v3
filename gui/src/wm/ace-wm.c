@@ -7,7 +7,7 @@
 #include <gtk/gtk.h>
 #include "ace-wm.h"
 
-typedef struct {
+struct _AceWMWindow {
     char *app_id;
     char *title;
     char *icon;
@@ -19,7 +19,7 @@ typedef struct {
     gboolean focused;
     int z_index;
     GtkWidget *window_widget;
-} AceWMWindow;
+};
 
 struct _AceWM {
     GObject parent_instance;
