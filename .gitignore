@@ -3,3 +3,4 @@ kernel-vm/*.img
 kernel-vm/initrd.img
 vm-disk.qcow2
 /kernel-vm/*.qcow2
+*.img
